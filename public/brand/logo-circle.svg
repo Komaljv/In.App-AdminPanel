@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Blue circle background -->
+  <circle cx="100" cy="100" r="100" fill="#3533CD"/>
+
+  <!-- Camera body outer brackets -->
+  <!-- Left bracket -->
+  <path d="M38 68 C28 68 22 76 22 86 L22 130 C22 140 28 148 38 148" stroke="#FFB800" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <!-- Right bracket -->
+  <path d="M162 68 C172 68 178 76 178 86 L178 130 C178 140 172 148 162 148" stroke="#FFB800" stroke-width="14" stroke-linecap="round" fill="none"/>
+
+  <!-- Top arc / shutter -->
+  <path d="M70 68 C70 52 80 42 100 42 C120 42 130 52 130 68" stroke="#FFB800" stroke-width="14" stroke-linecap="round" fill="none"/>
+
+  <!-- Outer lens circle -->
+  <circle cx="100" cy="108" r="38" stroke="#FFB800" stroke-width="12" fill="none"/>
+  <!-- Inner lens circle -->
+  <circle cx="100" cy="108" r="18" fill="#FFB800"/>
+</svg>

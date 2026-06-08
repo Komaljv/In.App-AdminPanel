@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <!-- Deep violet-purple background matching Figma exactly -->
+  <rect width="1440" height="900" fill="#3A2EC8"/>
+
+  <!-- ── Top ribbon: sweeps from upper-right, curves down to lower-left ── -->
+  <!-- Outer edge of ribbon -->
+  <path
+    d="M 800 -40
+       C 700 80, 480 280, 200 520
+       C 80 620, -40 680, -80 720
+       L -80 640
+       C -30 600, 90 540, 210 440
+       C 490 200, 710 0, 820 -40
+       Z"
+    fill="#FFB800"
+  />
+
+  <!-- ── Bottom-right ribbon ── -->
+  <path
+    d="M 1440 600
+       C 1320 650, 1200 720, 1160 900
+       L 1440 900
+       Z"
+    fill="#FFB800"
+  />
+
+  <!-- Extra subtle purple tint overlay for depth -->
+  <ellipse cx="900" cy="200" rx="500" ry="350" fill="#5040D8" opacity="0.25"/>
+</svg>
