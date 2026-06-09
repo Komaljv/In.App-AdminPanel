@@ -27,7 +27,7 @@ const navItems = [
   { href: "/dashboard/folders", label: "Folders", icon: Folder },
   { href: "/dashboard/activity", label: "Activity Logs", icon: Activity },
   // { href: "/dashboard/invitations", label: "Invitations", icon: UserPlus },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  // { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {

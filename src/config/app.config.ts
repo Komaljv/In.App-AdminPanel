@@ -6,7 +6,7 @@
 export const APP_CONFIG = {
   name: process.env.NEXT_PUBLIC_APP_NAME ?? 'In.APP Admin',
   version: process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
-  apiUrl: "http://localhost:3000",
+  apiUrl: "https://api.inapp.cloud",
   appUrl: "http://localhost:3001",
   authStorageKey: process.env.NEXT_PUBLIC_AUTH_STORAGE_KEY ?? 'crm_admin_auth',
 } as const;
