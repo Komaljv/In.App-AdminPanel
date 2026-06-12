@@ -1,0 +1,15 @@
+services:
+  admin-panel:
+    container_name: inapp-admin-panel
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
