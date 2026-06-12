@@ -1,0 +1,41 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: In.App-AdminPanel
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Clean up old Docker images
+        run: docker system prune -a -f
+
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_APP_NAME=${{ secrets.NEXT_PUBLIC_APP_NAME }}
+          NEXT_PUBLIC_AUTH_STORAGE_KEY=${{ secrets.NEXT_PUBLIC_AUTH_STORAGE_KEY }}
+          EOF
+
+      - name: Stop and remove existing containers
+        run: |
+          docker compose down || true
+          docker rm -f inapp-adminpanel || true
+
+      - name: Build and start services
+        run: docker compose up -d --build
+
+      - name: Wait for admin panel to be ready
+        run: sleep 15
+
+      - name: Check deployment status
+        run: docker ps | grep inapp-adminpanel
