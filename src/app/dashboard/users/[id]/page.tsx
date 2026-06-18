@@ -324,6 +324,17 @@ export default function UserAnalyticsPage() {
 
           <div className={styles.statBox}>
             <div className={styles.statHeader}>
+              <span className={styles.statTitle}>Storage Pending</span>
+              <Database size={16} />
+            </div>
+            {/* Using a hardcoded 5GB limit as an example. Adjust STORAGE_LIMIT as needed. */}
+            <div className={styles.statVal}>
+              {formatBytes(Math.max(0, (5 * 1024 * 1024 * 1024) - stats.totalDocumentsSize))}
+            </div>
+          </div>
+
+          <div className={styles.statBox}>
+            <div className={styles.statHeader}>
               <span className={styles.statTitle}>Folders Created</span>
               <Folder size={16} />
             </div>
