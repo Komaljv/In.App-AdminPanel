@@ -176,3 +176,4 @@ npm run lint
 | `ghost` | Icon buttons, subtle actions |
 | `danger` | Destructive actions (Delete, Revoke) |
 | `warning` | Cautionary actions |
+
