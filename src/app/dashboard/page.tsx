@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Users, UserPlus, CheckCircle, Clock, TrendingUp, Building2 } from "lucide-react";
 import styles from "./page.module.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   getDashboardStats,
@@ -22,6 +23,7 @@ interface ActivityItem {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -120,6 +122,44 @@ export default function DashboardPage() {
             <p className={styles.statLabel}>{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Category Summaries */}
+      <div className={styles.section} style={{ marginTop: "2rem" }}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Category Summaries</h2>
+        </div>
+        <div className={styles.statsGrid}>
+          {loadingStats ? (
+            <div className={styles.emptyState}>Loading...</div>
+          ) : (stats as any)?.categorySummaries?.length === 0 ? (
+            <div className={styles.emptyState}>No categories found</div>
+          ) : (
+            (stats as any)?.categorySummaries?.map((cat: any) => (
+              <div 
+                key={cat.id} 
+                className={styles.statCard} 
+                style={{ padding: "1rem", cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s" }}
+                onClick={() => router.push(`/dashboard/documents?categoryId=${cat.id}`)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "var(--shadow-md)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+                }}
+              >
+                <p className={styles.statLabel} style={{ fontWeight: 600, color: "#111827" }}>
+                  {cat.name}
+                </p>
+                <p className={styles.statValue} style={{ fontSize: "1.5rem" }}>
+                  {cat.documentCount} <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>documents</span>
+                </p>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Recent Activity */}

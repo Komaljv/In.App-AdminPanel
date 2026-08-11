@@ -72,6 +72,8 @@ export interface Role {
   id: string;
   name: string;
   isDefault: boolean;
+  permissions?: string[];
+  restrictedCategories?: any[];
 }
 
 // ─── Invitations ──────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import { Settings, Bell, Shield, Globe, Save, Key } from "lucide-react";
 import styles from "./page.module.css";
 
 export default function SettingsPage() {
-  const [apiUrl, setApiUrl] = useState("http://localhost:3000");
+  const [apiUrl, setApiUrl] = useState("http://localhost:3002");
   const [notifyInvite, setNotifyInvite] = useState(true);
   const [notifyAccept, setNotifyAccept] = useState(true);
   const [inviteExpiry, setInviteExpiry] = useState("24");
@@ -53,7 +53,7 @@ export default function SettingsPage() {
               className="form-input"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="http://localhost:3000"
+              placeholder="http://localhost:3002"
             />
           </div>
           <div className={styles.hint}>

@@ -15,6 +15,8 @@ import {
   UserPlus,
   Folder,
   Activity,
+  Briefcase,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import styles from "./sidebar.module.css";
@@ -22,12 +24,13 @@ import styles from "./sidebar.module.css";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/users", label: "Users", icon: Users },
+  { href: "/dashboard/roles", label: "Roles", icon: Shield },
+  { href: "/dashboard/departments", label: "Departments", icon: Briefcase },
   { href: "/dashboard/companies", label: "Companies", icon: Building2 },
-  { href: "/dashboard/categories", label: "Categories", icon: Tag },
+  { href: "/dashboard/categories", label: "Categories", icon: Tag },
   { href: "/dashboard/folders", label: "Folders", icon: Folder },
+  { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/activity", label: "Activity Logs", icon: Activity },
-  // { href: "/dashboard/invitations", label: "Invitations", icon: UserPlus },
-  // { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {

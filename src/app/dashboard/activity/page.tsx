@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Clock, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Search, Clock, ChevronLeft, ChevronRight, Filter, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { getAuditLogs } from "@/lib/api";
+import { getAuditLogs, exportAuditLogs } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import styles from "./page.module.css";
 
@@ -31,7 +31,29 @@ export default function ActivityPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const LIMIT = 20;
+
+  const handleExport = async () => {
+    if (!authUser?.token) return;
+    setExporting(true);
+    try {
+      const blob = await exportAuditLogs(authUser.token);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audit_logs.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast("Export downloaded successfully", "success");
+    } catch (err) {
+      showToast("Failed to export logs", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const fetchLogs = useCallback(async () => {
     if (!authUser?.token) return;
@@ -69,6 +91,14 @@ export default function ActivityPage() {
           <h1 className={styles.title}>Activity Logs</h1>
           <p className={styles.subtitle}>System-wide chronological audit trail</p>
         </div>
+        <button
+          className="btn btn-outline"
+          onClick={handleExport}
+          disabled={exporting}
+        >
+          {exporting ? <span className="spinner" /> : <Download size={16} />}
+          Export CSV
+        </button>
       </div>
 
       <div className={styles.toolbar}>

@@ -196,6 +196,30 @@ export async function getAuditLogs(
   return call(`/api/admin/audit-logs?page=${page}&limit=${limit}`, { method: 'GET' }, authToken);
 }
 
+/** GET /api/admin/audit-logs/export */
+export async function exportAuditLogs(authToken: string): Promise<Blob> {
+  const response = await fetch(`${BASE_URL}/api/admin/audit-logs/export`, {
+    method: 'GET',
+    headers: authHeaders(authToken),
+  });
+  if (!response.ok) throw new Error('Failed to export audit logs');
+  return response.blob();
+}
+
+/** GET /api/documents/search */
+export async function searchDocuments(
+  authToken: string,
+  params: Record<string, any>
+): Promise<ApiResponse> {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, String(value));
+    }
+  });
+  return call(`/api/documents/search?${query.toString()}`, { method: 'GET' }, authToken);
+}
+
 /** POST /api/admin/users/:id/impersonate */
 export async function impersonateUser(
   userId: string,
@@ -208,11 +232,12 @@ export async function impersonateUser(
 export async function inviteUser(
   email: string,
   roleId: string,
-  authToken: string
+  authToken: string,
+  departmentId?: string
 ): Promise<ApiResponse> {
   return call(
     '/api/admin/invite-user',
-    { method: 'POST', body: JSON.stringify({ email, roleId }) },
+    { method: 'POST', body: JSON.stringify({ email, roleId, departmentId }) },
     authToken
   );
 }
@@ -403,19 +428,6 @@ export async function getTrashDocuments(authToken: string): Promise<ApiResponse>
   return call('/api/documents/trash', { method: 'GET' }, authToken);
 }
 
-/** GET /api/documents/search */
-export async function searchDocuments(
-  q: string,
-  authToken: string,
-  page = 1,
-  limit = 10
-): Promise<ApiResponse> {
-  return call(
-    `/api/documents/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
-    { method: 'GET' },
-    authToken
-  );
-}
 
 /** GET /api/documents/timeline */
 export async function getDocumentTimeline(authToken: string): Promise<ApiResponse> {
@@ -439,6 +451,20 @@ export async function uploadDocument(
 /** DELETE /api/documents/:id */
 export async function deleteDocument(id: string, authToken: string): Promise<ApiResponse> {
   return call(`/api/documents/${id}`, { method: 'DELETE' }, authToken);
+}
+
+/** GET /api/documents/:id/versions */
+export async function getDocumentVersions(id: string, authToken: string): Promise<ApiResponse> {
+  return call(`/api/documents/${id}/versions`, { method: 'GET' }, authToken);
+}
+
+/** POST /api/documents/:id/versions/:versionId/restore */
+export async function restoreDocumentVersion(
+  id: string,
+  versionId: string,
+  authToken: string
+): Promise<ApiResponse> {
+  return call(`/api/documents/${id}/versions/${versionId}/restore`, { method: 'POST' }, authToken);
 }
 
 // ─── Folders ──────────────────────────────────────────────────────────────────
@@ -521,4 +547,50 @@ export async function sendMessage(
     { method: 'POST', body: JSON.stringify({ content }) },
     authToken
   );
+}
+
+// ─── Roles Management ────────────────────────────────────────────────────────
+
+export async function createRole(
+  data: { name: string; permissions?: string[]; restrictedCategories?: string[] },
+  authToken: string
+): Promise<ApiResponse<Role>> {
+  return call<Role>('/api/admin/roles', { method: 'POST', body: JSON.stringify(data) }, authToken);
+}
+
+export async function updateRole(
+  id: string,
+  data: { name?: string; permissions?: string[]; restrictedCategories?: string[] },
+  authToken: string
+): Promise<ApiResponse<Role>> {
+  return call<Role>(`/api/admin/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }, authToken);
+}
+
+export async function deleteRole(id: string, authToken: string): Promise<ApiResponse> {
+  return call(`/api/admin/roles/${id}`, { method: 'DELETE' }, authToken);
+}
+
+// ─── Departments ─────────────────────────────────────────────────────────────
+
+export interface Department {
+  id: string;
+  name: string;
+  companyId: string;
+  createdAt: string;
+}
+
+export async function getDepartments(authToken: string): Promise<ApiResponse<Department[]>> {
+  return call<Department[]>('/api/admin/departments', { method: 'GET' }, authToken);
+}
+
+export async function createDepartment(name: string, authToken: string): Promise<ApiResponse<Department>> {
+  return call<Department>('/api/admin/departments', { method: 'POST', body: JSON.stringify({ name }) }, authToken);
+}
+
+export async function updateDepartment(id: string, name: string, authToken: string): Promise<ApiResponse<Department>> {
+  return call<Department>(`/api/admin/departments/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }, authToken);
+}
+
+export async function deleteDepartment(id: string, authToken: string): Promise<ApiResponse> {
+  return call(`/api/admin/departments/${id}`, { method: 'DELETE' }, authToken);
 }

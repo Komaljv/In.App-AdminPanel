@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, UserPlus, Mail, ShieldCheck, Send, ChevronDown } from "lucide-react";
-import { inviteUser, getRoles } from "@/lib/api";
+import { inviteUser, getRoles, getDepartments } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
 import styles from "./invite-modal.module.css";
@@ -38,6 +38,9 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
   const [loading, setLoading] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [departmentId, setDepartmentId] = useState("");
   const [fieldError, setFieldError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -68,7 +71,17 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
       }
     };
 
+    const fetchDepartments = async () => {
+      setDepartmentsLoading(true);
+      const res = await getDepartments(user.token);
+      setDepartmentsLoading(false);
+      if (res.success && res.data) {
+        setDepartments(res.data);
+      }
+    };
+
     fetchRoles();
+    fetchDepartments();
     setEmail("");
     setFieldError("");
     setTimeout(() => emailRef.current?.focus(), 100);
@@ -83,7 +96,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
     if (!user?.token) { setFieldError("Not authenticated."); return; }
 
     setLoading(true);
-    const res = await inviteUser(email.trim(), roleId, user.token);
+    const res = await inviteUser(email.trim(), roleId, user.token, departmentId || undefined);
     setLoading(false);
 
     if (res.success) {
@@ -164,6 +177,38 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className={styles.selectChevron} size={16} />
+              </div>
+            )}
+          </div>
+
+          {/* Department selection */}
+          <div className="form-group">
+            <label className="form-label">
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <ShieldCheck size={13} /> Assign Department (Optional)
+              </span>
+            </label>
+            {departmentsLoading ? (
+              <div className={styles.rolesLoading}>
+                <span className="spinner" style={{ width: 18, height: 18 }} />
+                <span>Loading departments...</span>
+              </div>
+            ) : (
+              <div className={styles.selectWrapper}>
+                <select
+                  id="invite-department"
+                  className={styles.roleSelect}
+                  value={departmentId}
+                  onChange={(e) => { setDepartmentId(e.target.value); }}
+                >
+                  <option value="">No Department</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
                     </option>
                   ))}
                 </select>

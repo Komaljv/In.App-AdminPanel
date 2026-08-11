@@ -6,7 +6,7 @@
 export const APP_CONFIG = {
   name: process.env.NEXT_PUBLIC_APP_NAME ?? 'In.APP Admin',
   version: process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
-  apiUrl: "https://api.inapp.cloud",
+  apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "https://api.inapp.cloud",
   appUrl: "http://localhost:3001",
   authStorageKey: process.env.NEXT_PUBLIC_AUTH_STORAGE_KEY ?? 'crm_admin_auth',
 } as const;
@@ -63,6 +63,11 @@ export const API_ENDPOINTS = {
   dashboard: {
     stats: '/api/dashboard/stats',
     activity: '/api/dashboard/activity',
+  },
+  documents: {
+    list: '/api/documents',
+    versions: (id: string) => `/api/documents/${id}/versions`,
+    restoreVersion: (id: string, versionId: string) => `/api/documents/${id}/versions/${versionId}/restore`,
   },
 } as const;
 
