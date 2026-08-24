@@ -10,6 +10,8 @@ import {
   updateCategory,
   deleteCategory,
   type Category,
+  getRoles,
+  updateRole,
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import styles from "./page.module.css";
@@ -57,15 +59,41 @@ export default function CategoriesPage() {
     if (!newName.trim() || !user?.token) return;
     setCreating(true);
     const res = await createCategory(newName.trim(), user.token);
-    setCreating(false);
+    
     if (res.success && res.data) {
-      setCategories((prev) => [...prev, res.data!]);
+      const newCategory = res.data;
+      
+      // Update all roles that have restricted categories to include this new one
+      try {
+        const rolesRes = await getRoles(user.token);
+        if (rolesRes.success && rolesRes.data) {
+          const updatePromises = rolesRes.data.map(role => {
+            const currentRestricted = role.restrictedCategories?.map((c: any) => c.id || c) || [];
+            // If they have restrictions, add the new category so they don't lose access to it.
+            // If it's empty, they already have access to all categories.
+            if (currentRestricted.length > 0) {
+              return updateRole(
+                role.id,
+                { restrictedCategories: [...currentRestricted, newCategory.id] },
+                user.token!
+              );
+            }
+            return Promise.resolve();
+          });
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error("Failed to update roles with new category", err);
+      }
+
+      setCategories((prev) => [...prev, newCategory]);
       setNewName("");
       setShowCreateForm(false);
       showToast("Category created", "success");
     } else {
       showToast(res.error || "Failed to create category", "error");
     }
+    setCreating(false);
   };
 
   const startEdit = (cat: Category) => {

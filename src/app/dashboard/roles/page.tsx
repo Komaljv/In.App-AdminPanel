@@ -344,7 +344,7 @@ export default function RolesPage() {
                         className={styles.actionBtn}
                         onClick={() => startEdit(role)}
                         title="Edit role"
-                        disabled={role.isDefault} // Optional: prevent editing defaults
+                       // Optional: prevent editing defaults
                       >
                         <Pencil size={14} />
                       </button>
@@ -352,7 +352,7 @@ export default function RolesPage() {
                         className={`${styles.actionBtn} ${styles.actionDanger}`}
                         onClick={() => openDelete(role)}
                         title="Delete role"
-                        disabled={role.isDefault} // Optional: prevent deleting defaults
+                       // Optional: prevent deleting defaults
                       >
                         <Trash2 size={14} />
                       </button>
