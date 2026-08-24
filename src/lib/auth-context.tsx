@@ -29,11 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(AUTH_KEY);
-      if (stored) setUser(JSON.parse(stored));
-    } catch {}
+    const loadUser = () => {
+      try {
+        const stored = localStorage.getItem(AUTH_KEY);
+        if (stored) setUser(JSON.parse(stored));
+      } catch {}
+    };
+
+    loadUser();
     setIsLoading(false);
+
+    window.addEventListener("auth-token-refreshed", loadUser);
+    return () => window.removeEventListener("auth-token-refreshed", loadUser);
   }, []);
 
   const login = useCallback((token: string, userData: Omit<AuthUser, "token">) => {

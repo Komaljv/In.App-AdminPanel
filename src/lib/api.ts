@@ -52,6 +52,8 @@ function authHeaders(token: string) {
   };
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
 async function call<T>(
   path: string,
   options: RequestInit,
@@ -59,39 +61,270 @@ async function call<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const headers: Record<string, string> = {
-      Accept: 'application/json',
+      Accept: "application/json",
       ...(options.body && !(options.body instanceof FormData)
-        ? { 'Content-Type': 'application/json' }
+        ? { "Content-Type": "application/json" }
         : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers as Record<string, string>),
     };
 
-    const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-    const json = await res.json().catch(() => ({}));
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
 
+    const json = await res.json().catch(() => ({}));
+debugger
+    // ---------------------------------------------------------
+    // Handle Unauthorized / Token Expired with token refresh
+    // ---------------------------------------------------------
+    const isTokenExpired =
+      res.status === 401 ||
+      json?.error?.code === "AUTH_TOKEN_EXPIRED" ||
+      json?.error?.message === "Token expired" ||
+      json?.message === "Token expired" ||
+      json?.error === "Token expired";
+
+    if (
+      isTokenExpired &&
+      typeof window !== "undefined" &&
+      !path.includes("/api/auth/refresh") &&
+      !path.includes("/api/auth/login")
+    ) {
+      const stored = localStorage.getItem("crm_admin_auth");
+
+      if (stored) {
+        try {
+          const authUser = JSON.parse(stored);
+
+          if (authUser.refreshToken) {
+            if (!refreshPromise) {
+              refreshPromise = fetch(`${BASE_URL}/api/auth/refresh`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                body: JSON.stringify({
+                  refreshToken: authUser.refreshToken,
+                }),
+              })
+                .then(async (refreshRes) => {
+                  const refreshJson = await refreshRes
+                    .json()
+                    .catch(() => ({}));
+                  
+                  let actualData = refreshJson?.data;
+                  if (typeof refreshJson?.data === 'string' && refreshJson?.message && typeof refreshJson?.message === 'object') {
+                    actualData = refreshJson.message;
+                  }
+
+                  if (
+                    refreshRes.ok &&
+                    refreshJson?.success &&
+                    actualData?.accessToken
+                  ) {
+                    const newAccessToken = actualData.accessToken;
+
+                    const newRefreshToken =
+                      actualData.refreshToken ||
+                      authUser.refreshToken;
+
+                    authUser.token = newAccessToken;
+                    authUser.accessToken = newAccessToken;
+                    authUser.refreshToken = newRefreshToken;
+
+                    localStorage.setItem(
+                      "crm_admin_auth",
+                      JSON.stringify(authUser)
+                    );
+
+                    window.dispatchEvent(
+                      new Event("auth-token-refreshed")
+                    );
+
+                    return newAccessToken;
+                  }
+
+                  console.error("Refresh failed. Response:", refreshJson);
+                  localStorage.removeItem("crm_admin_auth");
+                  window.location.href = "/login";
+
+                  return null;
+                })
+                .catch(() => {
+                  localStorage.removeItem("crm_admin_auth");
+                  window.location.href = "/login";
+
+                  return null;
+                })
+                .finally(() => {
+                  refreshPromise = null;
+                });
+            }
+
+            const newAccessToken = await refreshPromise;
+
+            if (newAccessToken) {
+              const retryHeaders = {
+                ...headers,
+                Authorization: `Bearer ${newAccessToken}`,
+              };
+
+              const retryRes = await fetch(`${BASE_URL}${path}`, {
+                ...options,
+                headers: retryHeaders,
+              });
+
+              const retryJson = await retryRes
+                .json()
+                .catch(() => ({}));
+
+              if (!retryRes.ok) {
+                return {
+                  success: false,
+                  error: getApiError(retryJson, retryRes.status),
+                };
+              }
+
+              return normalizeApiResponse<T>(retryJson);
+            }
+          }
+        } catch (e) {
+          console.error("Token refresh error:", e);
+        }
+      }
+    }
+
+    // ---------------------------------------------------------
+    // Normal API error
+    // ---------------------------------------------------------
     if (!res.ok) {
       return {
         success: false,
-        error:
-          json?.message ||
-          json?.error ||
-          (Array.isArray(json?.message) ? json.message.join(', ') : undefined) ||
-          `Error ${res.status}`,
+        error: getApiError(json, res.status),
       };
     }
 
-    return {
-      success: true,
-      data: json?.data ?? json,
-      message: json?.message,
-    };
+    // ---------------------------------------------------------
+    // SUCCESS RESPONSE
+    // ---------------------------------------------------------
+    return normalizeApiResponse<T>(json);
   } catch (err: unknown) {
+    console.error("API call error:", err);
+
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Network error',
+      error:
+        err instanceof Error
+          ? err.message
+          : "Network error",
     };
   }
+}
+
+/**
+ * Normalize API response.
+ *
+ * Supports both:
+ *
+ * Correct:
+ * {
+ *   success: true,
+ *   data: {
+ *     user,
+ *     accessToken
+ *   },
+ *   message: "Login successful"
+ * }
+ *
+ * And the current login response:
+ * {
+ *   success: true,
+ *   data: "Login successful",
+ *   message: {
+ *     user,
+ *     accessToken
+ *   }
+ * }
+ */
+function normalizeApiResponse<T>(json: any): ApiResponse<T> {
+  // ---------------------------------------------------------
+  // Fix inverted data/message fields
+  // Many endpoints return the success message in `data` and the payload in `message`
+  // ---------------------------------------------------------
+  if (json && typeof json === 'object') {
+    if (typeof json.data === 'string' && json.message !== undefined && typeof json.message !== 'string') {
+      console.warn("API returned payload in `message` and string in `data`. Swapping them.");
+      const actualData = json.message;
+      const actualMessage = json.data;
+      json.data = actualData;
+      json.message = actualMessage;
+    }
+  }
+
+  // ---------------------------------------------------------
+  // Standard response extraction
+  // ---------------------------------------------------------
+  let data = json;
+
+  if (json && typeof json === 'object') {
+    if ('data' in json) {
+      // If the json has a "data" property, we normally unwrap it,
+      // UNLESS it's a paginated response containing 'total' or 'page' alongside 'data'
+      if (Array.isArray(json.data) && ('total' in json || 'page' in json || 'limit' in json)) {
+        data = json;
+      } else {
+        data = json.data;
+      }
+    }
+    
+    // Now check if the resulting data is still an object with a nested array
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      if (Array.isArray(data.data) && !('total' in data) && !('page' in data)) {
+        data = data.data;
+      } else if (Array.isArray(data.items)) {
+        data = data.items;
+      } else if (Array.isArray(data.results)) {
+        data = data.results;
+      } else {
+        // Fallback: If the object only has one relevant key and it's an array, unwrap it
+        const keys = Object.keys(data).filter(k => !['success', 'message', 'status', 'meta', 'page', 'total', 'limit'].includes(k));
+        if (keys.length === 1 && Array.isArray(data[keys[0]])) {
+          data = data[keys[0]];
+        }
+      }
+    }
+  }
+
+  return {
+    success: json?.success !== false,
+    data: data as T,
+    message:
+      typeof json?.message === "string"
+        ? json.message
+        : undefined,
+  };
+}
+
+/**
+ * Safely extract API error message.
+ */
+function getApiError(json: any, status: number): string {
+  if (Array.isArray(json?.message)) {
+    return json.message.join(", ");
+  }
+
+  if (typeof json?.message === "string") {
+    return json.message;
+  }
+
+  if (typeof json?.error === "string") {
+    return json.error;
+  }
+
+  return `Error ${status}`;
 }
 
 export { call as apiCall };

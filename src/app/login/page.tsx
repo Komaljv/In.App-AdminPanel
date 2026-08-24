@@ -27,11 +27,12 @@ export default function LoginPage() {
     try {
       const res = await apiLogin(email, password);
       if (res.success && res.data) {
-        const { accessToken, user } = res.data;
+        const { accessToken, refreshToken, user } = res.data as any; // Cast to any or appropriate type if needed
         
         // Normalize role to string if it's an object from the API
         const normalizedUser = {
           ...user,
+          refreshToken, // Save the refresh token!
           role: typeof user.role === 'object' ? user.role.name : user.role
         };
 
