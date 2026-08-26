@@ -4,7 +4,7 @@
  */
 
 export const APP_CONFIG = {
-  name: process.env.NEXT_PUBLIC_APP_NAME ?? 'In.APP Admin',
+  name: process.env.NEXT_PUBLIC_APP_NAME ?? 'Fred Admin',
   version: process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
   apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "https://api.inapp.cloud",
   appUrl: "http://localhost:3001",

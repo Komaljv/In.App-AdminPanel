@@ -24,9 +24,20 @@ interface CompanyForm {
 
 const EMPTY_FORM: CompanyForm = { name: "", fiscalCode: "" };
 
+import { useRouter } from "next/navigation";
+
 export default function CompaniesPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
+
+  // Redirect non-super admins
+  useEffect(() => {
+    if (user && !(user as any).isSuperAdmin) {
+      router.replace("/dashboard");
+      showToast("Unauthorized access", "error");
+    }
+  }, [user, router, showToast]);
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -416,3 +427,4 @@ export default function CompaniesPage() {
     </div>
   );
 }
+

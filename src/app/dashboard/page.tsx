@@ -64,12 +64,12 @@ export default function DashboardPage() {
       icon: Users,
       color: "#111827", // Accent black
     },
-    {
+    ...(((user as any)?.isSuperAdmin === true) ? [{
       label: "Total Companies",
       value: stats?.totalCompanies ?? "—",
       icon: Building2,
       color: "#6366f1", // Indigo
-    },
+    }] : []),
     {
       label: "Total Documents",
       value: (stats as Record<string, unknown>)?.totalDocuments ?? "—",
@@ -221,3 +221,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

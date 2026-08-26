@@ -1,5 +1,5 @@
 /**
- * Global shared types for the In.APP Admin Panel.
+ * Global shared types for the Fred Admin Panel.
  * Import from "@/types" throughout the project.
  */
 

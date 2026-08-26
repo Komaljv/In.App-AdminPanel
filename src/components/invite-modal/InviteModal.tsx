@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, UserPlus, Mail, ShieldCheck, Send, ChevronDown } from "lucide-react";
-import { inviteUser, getRoles, getDepartments } from "@/lib/api";
+import { X, UserPlus, Mail, ShieldCheck, Send, ChevronDown, Building2 } from "lucide-react";
+import { inviteUser, getRoles, getDepartments, getCompanies } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
 import styles from "./invite-modal.module.css";
@@ -22,7 +22,7 @@ interface InviteModalProps {
 // Roles to exclude (test/system roles)
 const EXCLUDED_ROLES = ["update"];
 
-// Role badge colors — In.APP brand palette
+// Role badge colors — Fred brand palette
 const ROLE_COLORS: Record<string, string> = {
   ADMIN:    "#FFB800",  // brand yellow
   MANAGER:  "#6060FF",  // electric blue
@@ -41,6 +41,9 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
   const [departmentId, setDepartmentId] = useState("");
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [companyId, setCompanyId] = useState("");
+  const [companiesLoading, setCompaniesLoading] = useState(false);
   const [fieldError, setFieldError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -80,8 +83,19 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
       }
     };
 
+    const fetchCompanies = async () => {
+      if (!(user as any)?.isSuperAdmin) return;
+      setCompaniesLoading(true);
+      const res = await getCompanies(user.token, 1, 100);
+      setCompaniesLoading(false);
+      if (res.success && res.data) {
+        setCompanies((res.data as any) || []);
+      }
+    };
+
     fetchRoles();
     fetchDepartments();
+    fetchCompanies();
     setEmail("");
     setFieldError("");
     setTimeout(() => emailRef.current?.focus(), 100);
@@ -94,9 +108,10 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
     if (!email.trim()) { setFieldError("Email is required."); return; }
     if (!roleId) { setFieldError("Please select a role."); return; }
     if (!user?.token) { setFieldError("Not authenticated."); return; }
+    if ((user as any)?.isSuperAdmin && !companyId) { setFieldError("Please select a company."); return; }
 
     setLoading(true);
-    const res = await inviteUser(email.trim(), roleId, user.token, departmentId || undefined);
+    const res = await inviteUser(email.trim(), roleId, user.token, departmentId || undefined, companyId || undefined);
     setLoading(false);
 
     if (res.success) {
@@ -184,6 +199,42 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
               </div>
             )}
           </div>
+
+          {/* Company selection for Super Admin */}
+          {(user as any)?.isSuperAdmin && (
+            <div className="form-group">
+              <label className="form-label">
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Building2 size={13} /> Assign Company (Required for Super Admins)
+                </span>
+              </label>
+              {companiesLoading ? (
+                <div className={styles.rolesLoading}>
+                  <span className="spinner" style={{ width: 18, height: 18 }} />
+                  <span>Loading companies...</span>
+                </div>
+              ) : (
+                <div className={styles.selectWrapper}>
+                  <select
+                    id="invite-company"
+                    className={styles.roleSelect}
+                    value={companyId}
+                    onChange={(e) => { setCompanyId(e.target.value); setFieldError(""); }}
+                    required
+                  >
+                      <option value="" disabled>Select a company</option>
+                   <>   {console.log("companies", companies)}</>
+                    {companies.map((comp) => (
+                      <option key={comp.id} value={comp.id}>
+                        {comp.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className={styles.selectChevron} size={16} />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Department selection */}
           <div className="form-group">

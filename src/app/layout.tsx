@@ -10,9 +10,9 @@ export const metadata: Metadata = {
   description: 'Admin panel for managing users, roles, and invitations.',
   robots: { index: false, follow: false }, // private admin panel
   icons: {
-    icon: '/brand/logo-icon.svg',
-    shortcut: '/brand/logo-icon.svg',
-    apple: '/brand/logo-icon.svg',
+    icon: '/brand/fred_logo.png',
+    shortcut: '/brand/fred_logo.png',
+    apple: '/brand/fred_logo.png',
   },
 };
 
@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
-      <body>{children}</body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

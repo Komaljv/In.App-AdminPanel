@@ -8,7 +8,7 @@ import ChangeRoleModal from "@/components/change-role-modal/ChangeRoleModal";
 import NotificationModal from "@/components/notification-modal/NotificationModal";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminUsers, deleteUser, deactivateUser, activateUser, type User } from "@/lib/api";
+import { getAdminUsers, deleteUser, deactivateUser, activateUser, getCompanies, type User, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import styles from "./page.module.css";
 
@@ -23,6 +23,7 @@ export default function UsersPage() {
   const { user: authUser } = useAuth();
   const { showToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [search, setSearch] = useState("");
@@ -78,6 +79,17 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  useEffect(() => {
+    if ((authUser as any)?.isSuperAdmin && authUser?.token) {
+      getCompanies(authUser.token, 1, 100).then(res => {
+        if (res.success && res.data) {
+          const list = Array.isArray(res.data) ? res.data : (res.data as any).items || (res.data as any).data || [];
+          setCompanies(list);
+        }
+      });
+    }
+  }, [authUser]);
 
   const handleDelete = async (id: string, name: string) => {
     openConfirm(
@@ -208,6 +220,7 @@ export default function UsersPage() {
           <thead>
             <tr>
               <th>User</th>
+              {((authUser as any)?.isSuperAdmin) && <th>Company</th>}
               <th>Role</th>
               <th>Status</th>
               <th>Joined</th>
@@ -257,6 +270,13 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
+                  {((authUser as any)?.isSuperAdmin) && (
+                    <td>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {companies.find(c => c.id === u.companyId)?.name || "—"}
+                      </span>
+                    </td>
+                  )}
                   <td>
                     <span className="badge badge-info">{u.role?.name || "Member"}</span>
                   </td>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { login as apiLogin } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -27,12 +29,11 @@ export default function LoginPage() {
     try {
       const res = await apiLogin(email, password);
       if (res.success && res.data) {
-        const { accessToken, refreshToken, user } = res.data as any; // Cast to any or appropriate type if needed
+        const { accessToken, refreshToken, user } = res.data as any;
         
-        // Normalize role to string if it's an object from the API
         const normalizedUser = {
           ...user,
-          refreshToken, // Save the refresh token!
+          refreshToken,
           role: typeof user.role === 'object' ? user.role.name : user.role
         };
 
@@ -50,7 +51,6 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Brand Side (Left) ── */}
       <div className={styles.brandSide}>
         <div className={styles.brandContent}>
           <div className={styles.brandBadge}>
@@ -59,18 +59,27 @@ export default function LoginPage() {
           </div>
           <h1 className={styles.brandTitle}>
             <span>Welcome to</span>
-            In.APP <em>Admin</em>
+            Fred <em>Admin</em>
           </h1>
         </div>
       </div>
 
       <div className={styles.formSide}>
-       
-
         <div className={styles.formWrapper}>
+          <div className={styles.logoContainer}>
+            <Image 
+              src="/brand/fred_logo.png" 
+              alt="Fred Administrativo" 
+              width={260} 
+              height={130} 
+              className={styles.logo}
+              priority
+            />
+          </div>
+
           <div className={styles.formHeader}>
             <h2 className={styles.formTitle}>Sign In</h2>
-            <p className={styles.formSubtitle}>Enter your credentials to access the portal</p>
+            <p className={styles.formSubtitle}>Sign in to continue</p>
           </div>
        
           {error && (
@@ -81,16 +90,15 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* Email Field */}
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Email Address</label>
+              <label className={styles.label}>Email</label>
               <div className={styles.inputWrapper}>
-                <Mail size={20} className={styles.inputIcon} />
+                <Mail size={18} className={styles.inputIcon} />
                 <input
                   id="email"
                   type="email"
                   className={styles.input}
-                  placeholder="admin@example.com"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
@@ -98,16 +106,15 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password Field */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>Password</label>
               <div className={styles.inputWrapper}>
-                <Lock size={20} className={styles.inputIcon} />
+                <Lock size={18} className={styles.inputIcon} />
                 <input
                   id="password"
                   type={showPwd ? "text" : "password"}
                   className={styles.input}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
@@ -117,9 +124,24 @@ export default function LoginPage() {
                   className={styles.eyeBtn}
                   onClick={() => setShowPwd(!showPwd)}
                 >
-                  {showPwd ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+            </div>
+
+            <div className={styles.formActions}>
+              <label className={styles.checkboxLabel}>
+                <input 
+                  type="checkbox" 
+                  className={styles.checkbox} 
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                <span>Remember me</span>
+              </label>
+              <Link href="/forgot-password" className={styles.forgotLink}>
+                Forgot your password?
+              </Link>
             </div>
 
             <button
@@ -127,14 +149,7 @@ export default function LoginPage() {
               className={styles.submitBtn}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                "Verifying..."
-              ) : (
-                <>
-                  Sign In to Dashboard
-                  <LogIn size={20} />
-                </>
-              )}
+              {isSubmitting ? "SIGNING IN..." : "SIGN IN"}
             </button>
           </form>
         </div>

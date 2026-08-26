@@ -47,11 +47,8 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       {/* Brand */}
       <div className={styles.brand}>
-        <div className={styles.brandIcon}>
-          <img src="/brand/logo-circle.svg" alt="In.APP" style={{ width: '100%', height: '100%' }} />
-        </div>
-        <div>
-          <p className={styles.brandName}>IN.APP</p>
+        <img src="/brand/fred_logo.png" alt="Fred" className={styles.brandLogoImage} />
+        <div className={styles.brandText}>
           <p className={styles.brandRole}>Admin Portal</p>
         </div>
       </div>
@@ -66,18 +63,34 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className={styles.nav}>
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
-          return (
-            <Link key={href} href={href} className={`${styles.navItem} ${active ? styles.active : ""}`}>
-              <span className={styles.navIcon}>
-                <Icon size={18} />
-              </span>
-              <span className={styles.navLabel}>{label}</span>
-              {active && <ChevronRight size={14} className={styles.chevron} />}
-            </Link>
-          );
-        })}
+        {navItems
+          .filter(item => {
+            const isSuperAdmin = (user as any)?.isSuperAdmin === true;
+            const roleName = (typeof user?.role === 'string' ? user.role : (user?.role as any)?.name)?.toUpperCase() || "USER";
+            const isAdmin = roleName === "ADMIN" || roleName === "SUPER_ADMIN" || roleName === "SYSTEM ADMIN" || isSuperAdmin;
+
+
+
+            // Administrative tabs restricted to Admins and Super Admins
+            const adminTabs = ["/dashboard/users", "/dashboard/roles", "/dashboard/departments", "/dashboard/activity"];
+            if (adminTabs.includes(item.href)) {
+              return isAdmin;
+            }
+
+            return true;
+          })
+          .map(({ href, label, icon: Icon }) => {
+            const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+            return (
+              <Link key={href} href={href} className={`${styles.navItem} ${active ? styles.active : ""}`}>
+                <span className={styles.navIcon}>
+                  <Icon size={18} />
+                </span>
+                <span className={styles.navLabel}>{label}</span>
+                {active && <ChevronRight size={14} className={styles.chevron} />}
+              </Link>
+            );
+          })}
       </nav>
 
       {/* Bottom */}
@@ -101,3 +114,5 @@ export default function Sidebar() {
     </aside>
   );
 }
+
+

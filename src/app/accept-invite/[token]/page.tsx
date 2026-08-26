@@ -96,9 +96,19 @@ export default function AcceptInvitePage() {
 
     if (!form.masterName.trim()) { setError("Master name is required."); return; }
     if (!form.masterEmail.trim()) { setError("Master email is required."); return; }
+    
+    if (form.phoneNumber) {
+      const phoneClean = form.phoneNumber.replace(/[\s\-()]/g, "");
+      if (!/^\+?[0-9]{7,15}$/.test(phoneClean)) {
+        setError("Please enter a valid phone number (7-15 digits).");
+        return;
+      }
+    }
+
     if (!form.password) { setError("Password is required."); return; }
     if (form.password.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (form.password !== form.confirmPassword) { setError("Passwords do not match."); return; }
+    if (!form.country) { setError("Please select a country."); return; }
 
     setLoading(true);
     const res = await acceptInvite(token, form.password, {
@@ -175,7 +185,7 @@ export default function AcceptInvitePage() {
     <div className={styles.page}>
       {/* ── Logo badge — floating for mobile ── */}
       <div className={styles.logoBadge}>
-        <img src="/brand/logo-circle.svg" alt="IN.APP" />
+        <img src="/brand/fred_logo.png" alt="Fred" style={{ objectFit: 'contain' }} />
       </div>
 
       {/* ── Brand Side (Left) ── */}
@@ -187,7 +197,7 @@ export default function AcceptInvitePage() {
           </div>
           <h1 className={styles.brandTitle}>
             <span>Join the</span>
-            In.APP <em>Team</em>
+            Fred <em>Team</em>
           </h1>
           <p className={styles.brandSubtitle}>
             Complete your registration to start managing your digital ecosystem with precision and ease.
@@ -203,10 +213,10 @@ export default function AcceptInvitePage() {
           {/* Header */}
           <div className={styles.logo}>
             <div className={styles.logoIcon}>
-              <img src="/brand/logo-circle.svg" alt="In.APP" style={{ width: '100%', height: '100%' }} />
+              <img src="/brand/fred_logo.png" alt="Fred" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div>
-              <p className={styles.logoLabel}>IN.APP</p>
+              <p className={styles.logoLabel}>Fred</p>
               <p className={styles.logoSub}>Accept Invitation</p>
             </div>
           </div>
@@ -290,6 +300,7 @@ export default function AcceptInvitePage() {
                 placeholder="Phone number"
                 value={form.phoneNumber}
                 onChange={set("phoneNumber")}
+                maxLength={20}
               />
             </div>
 

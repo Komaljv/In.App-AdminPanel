@@ -12,29 +12,27 @@
 
 :root {
   /* ── Brand Palette (raw, never use directly in components) ── */
-  --brand-blue-900:  #12128A;
-  --brand-blue-800:  #1C1CB8;
-  --brand-blue-700:  #2828CC;
-  --brand-blue-600:  #3A3AE0;
-  --brand-yellow-500:#FFB800;
-  --brand-yellow-400:#FFC840;
-  --brand-yellow-600:#E6A600;
+  --brand-primary-500: #5B2EFF;
+  --brand-primary-400: #8B5CFF;
+  --brand-primary-600: #473b81;
+  --brand-accent-500:  #F6C940;
+  --brand-accent-600:  #E0A800;
 
   /* ── Semantic Color Tokens ── */
 
   /* Primary action color */
-  --color-primary:         var(--brand-yellow-500);
-  --color-primary-hover:   var(--brand-yellow-400);
-  --color-primary-active:  var(--brand-yellow-600);
-  --color-primary-subtle:  rgba(255, 184, 0, 0.10);
-  --color-primary-border:  rgba(255, 184, 0, 0.30);
-  --color-primary-text:    #92520A;   /* accessible on light bg */
-  --color-on-primary:      #7A3800;   /* WCAG AA text ON primary yellow bg */
+  --color-primary:         var(--brand-primary-500);
+  --color-primary-hover:   var(--brand-primary-400);
+  --color-primary-active:  var(--brand-primary-600);
+  --color-primary-subtle:  rgba(91, 46, 255, 0.10);
+  --color-primary-border:  rgba(91, 46, 255, 0.30);
+  --color-primary-text:    #3A1CA8;
+  --color-on-primary:      #FFFFFF;
 
   /* Brand accent (sidebar, accented elements) */
-  --color-accent:          #111827;   /* Black/Very Dark Gray */
-  --color-accent-hover:    #000000;
-  --color-accent-subtle:   rgba(0, 0, 0, 0.05);
+  --color-accent:          var(--brand-accent-500);
+  --color-accent-hover:    var(--brand-accent-600);
+  --color-accent-subtle:   rgba(246, 201, 64, 0.15);
 
   /* Status */
   --color-success:         #10b981;
@@ -73,7 +71,7 @@
   --color-sidebar-text-active: #ffffff;
   --color-sidebar-text-muted:  rgba(255, 255, 255, 0.3);
   --color-sidebar-item-hover:  rgba(255, 255, 255, 0.08);
-  --color-sidebar-item-active: rgba(255, 184, 0, 0.15); /* Keep yellow active state */
+  --color-sidebar-item-active: rgba(91, 46, 255, 0.15); /* Purple active state */
   --color-sidebar-icon-bg:     rgba(255, 255, 255, 0.05);
 
   /* ── Text ── */
@@ -82,15 +80,15 @@
   --color-text-muted:      #9CA3AF;
   --color-text-disabled:   #D1D5DB;
   --color-text-inverse:    #FFFFFF;
-  --color-text-brand:      var(--brand-yellow-600); /* accessible on light */
+  --color-text-brand:      var(--brand-primary-500); /* accessible on light */
   --color-text-link:       #111827;
   --color-text-link-hover: #000000;
 
   /* ── Border ── */
   --color-border:          #E5E7EB;
   --color-border-strong:   #D1D5DB;
-  --color-border-focus:    var(--brand-yellow-500);
-  --color-border-brand:    rgba(255, 184, 0, 0.35);
+  --color-border-focus:    var(--brand-primary-500);
+  --color-border-brand:    rgba(91, 46, 255, 0.35);
 
   /* ── Shadow (light, subtle — for light theme) ── */
   --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.04);
@@ -98,8 +96,8 @@
   --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
   --shadow-lg:  0 10px 30px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.06);
   --shadow-xl:  0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.06);
-  --shadow-primary: 0 4px 14px rgba(255, 184, 0, 0.35);
-  --shadow-focus:   0 0 0 3px rgba(255, 184, 0, 0.18);
+  --shadow-primary: 0 4px 14px rgba(91, 46, 255, 0.35);
+  --shadow-focus:   0 0 0 3px rgba(91, 46, 255, 0.18);
 
   /* ── Spacing Scale (8px base) ── */
   --space-1:  4px;
@@ -176,7 +174,7 @@
   --color-warning-text:    #D29922;
   --color-danger-text:     #F85149;
   --color-info-text:       #58A6FF;
-  --color-primary-text:    var(--brand-yellow-400);
+  --color-primary-text:    var(--brand-primary-400);
 
   --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.4);
@@ -297,7 +295,7 @@ html, body {
 }
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(255, 184, 0, 0.45);
+  box-shadow: 0 6px 20px rgba(91, 46, 255, 0.45);
   filter: brightness(1.04);
 }
 .btn-primary:active:not(:disabled) {

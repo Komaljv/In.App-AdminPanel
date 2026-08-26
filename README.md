@@ -1,4 +1,4 @@
-# In.APP Admin Panel
+# Fred Admin Panel
 
 A production-grade Next.js admin dashboard built with the App Router, TypeScript, and a fully token-driven design system.
 

@@ -75,7 +75,6 @@ async function call<T>(
     });
 
     const json = await res.json().catch(() => ({}));
-debugger
     // ---------------------------------------------------------
     // Handle Unauthorized / Token Expired with token refresh
     // ---------------------------------------------------------
@@ -466,11 +465,12 @@ export async function inviteUser(
   email: string,
   roleId: string,
   authToken: string,
-  departmentId?: string
+  departmentId?: string,
+  companyId?: string
 ): Promise<ApiResponse> {
   return call(
     '/api/admin/invite-user',
-    { method: 'POST', body: JSON.stringify({ email, roleId, departmentId }) },
+    { method: 'POST', body: JSON.stringify({ email, roleId, departmentId, companyId }) },
     authToken
   );
 }
