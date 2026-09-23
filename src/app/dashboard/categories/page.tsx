@@ -120,7 +120,7 @@ export default function CategoriesPage() {
   const handleUpdate = async (id: string) => {
     if (!editName.trim() || !user?.token) return;
     setSaving(true);
-    const res = await updateCategory(id, { name: editName.trim() }, user.token);
+    const res = await updateCategory(id,  { name: editName.trim() }, user.token);
     setSaving(false);
     if (res.success) {
       setCategories((prev) =>
@@ -136,7 +136,7 @@ export default function CategoriesPage() {
   const toggleVisibility = async (cat: Category) => {
     if (!user?.token) return;
     const newStatus = cat.isVisible === false ? true : false;
-    const res = await updateCategory(cat.id, { isVisible: newStatus }, user.token);
+    const res = await updateCategory(cat.id,   { isVisible: newStatus }, user.token);
     if (res.success) {
       setCategories((prev) =>
         prev.map((c) => (c.id === cat.id ? { ...c, isVisible: newStatus } : c))

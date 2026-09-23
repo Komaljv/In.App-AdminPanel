@@ -28,6 +28,7 @@ export interface Category {
   name: string;
   companyId: string;
   createdAt: string;
+  isVisible: boolean;
   creator?: {
     id: string;
     name: string;
@@ -604,12 +605,18 @@ export async function createCategory(
 /** PUT /api/categories/:id */
 export async function updateCategory(
   id: string,
-  name: string,
+  data: {
+    name?: string;
+    isVisible?: boolean;
+  },
   authToken: string
-): Promise<ApiResponse> {
-  return call(
+): Promise<ApiResponse<Category>> {
+  return call<Category>(
     `/api/categories/${id}`,
-    { method: 'PUT', body: JSON.stringify({ name }) },
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    },
     authToken
   );
 }
