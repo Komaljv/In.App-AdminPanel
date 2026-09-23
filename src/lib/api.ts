@@ -7,6 +7,7 @@ import type {
   Invitation,
   DashboardStats,
   PaginatedResponse,
+  Company,
 } from '@/types';
 
 // Re-export all types so existing code importing from '@/lib/api' keeps working
@@ -18,6 +19,7 @@ export type {
   Invitation,
   DashboardStats,
   PaginatedResponse,
+  Company,
 };
 
 // Extra local-only types not in global types
@@ -33,12 +35,7 @@ export interface Category {
   };
 }
 
-export interface Company {
-  id: string;
-  name: string;
-  fiscalCode?: string;
-  createdAt?: string;
-}
+
 
 const BASE_URL = APP_CONFIG.apiUrl ? `${APP_CONFIG.apiUrl}` : '/';
 
@@ -323,7 +320,35 @@ function getApiError(json: any, status: number): string {
     return json.error;
   }
 
-  return `Error ${status}`;
+  if (typeof json?.error?.message === "string") {
+    return json.error.message;
+  }
+
+  // Map common HTTP status codes to user-friendly messages
+  switch (status) {
+    case 400:
+      return "Invalid request. Please check your input and try again.";
+    case 401:
+      return "Authentication failed. Please check your credentials.";
+    case 403:
+      return "You do not have permission to perform this action.";
+    case 404:
+      return "The requested resource could not be found.";
+    case 408:
+      return "The request timed out. Please try again.";
+    case 429:
+      return "Too many requests. Please wait a moment and try again.";
+    case 500:
+      return "An internal server error occurred. Please try again later.";
+    case 502:
+      return "Bad gateway. The server is temporarily unavailable.";
+    case 503:
+      return "Service unavailable. Please try again later.";
+    case 504:
+      return "Gateway timeout. The server took too long to respond.";
+    default:
+      return "An unexpected error occurred. Please try again.";
+  }
 }
 
 export { call as apiCall };
@@ -616,7 +641,7 @@ export async function getCompany(id: string, authToken: string): Promise<ApiResp
 
 /** POST /api/company */
 export async function createCompany(
-  data: { name: string; fiscalCode?: string },
+  data: { name: string; fiscalCode?: string; email: string },
   authToken: string
 ): Promise<ApiResponse<Company>> {
   return call<Company>('/api/company', { method: 'POST', body: JSON.stringify(data) }, authToken);
@@ -636,6 +661,21 @@ export async function deleteCompany(id: string, authToken: string): Promise<ApiR
   return call(`/api/company/${id}`, { method: 'DELETE' }, authToken);
 }
 
+/** POST /api/admin/companies/:companyId/custom-plan */
+export async function createCustomPlan(
+  companyId: string,
+  data: {
+    name: string;
+    price: number;
+    maxUsers: number;
+    storage?: number;
+    features?: string[];
+  },
+  authToken: string
+): Promise<ApiResponse> {
+  return call(`/api/admin/companies/${companyId}/custom-plan`, { method: 'POST', body: JSON.stringify(data) }, authToken);
+}
+
 // ─── Documents ────────────────────────────────────────────────────────────────
 
 /** GET /api/documents */
@@ -652,6 +692,20 @@ export async function getDocuments(
 }
 
 /** GET /api/documents/uploads */
+/** GET /api/documents/private/:token */
+export async function getPrivateDocument(token: string, authToken: string): Promise<ApiResponse> {
+  return call(`/api/documents/private/${token}`, { method: 'GET' }, authToken);
+}
+
+export async function downloadPrivateDocument(token: string, authToken: string): Promise<Blob> {
+  const response = await fetch(`${BASE_URL}/api/documents/private/${token}/download`, {
+    method: 'GET',
+    headers: authHeaders(authToken),
+  });
+  if (!response.ok) throw new Error('Failed to download document');
+  return response.blob();
+}
+
 export async function getUploadedDocuments(authToken: string): Promise<ApiResponse> {
   return call('/api/documents/uploads', { method: 'GET' }, authToken);
 }
@@ -826,4 +880,89 @@ export async function updateDepartment(id: string, name: string, authToken: stri
 
 export async function deleteDepartment(id: string, authToken: string): Promise<ApiResponse> {
   return call(`/api/admin/departments/${id}`, { method: 'DELETE' }, authToken);
+}
+
+// ─── Sharing ─────────────────────────────────────────────────────────────
+
+export async function createPublicShareLink(
+  id: string, 
+  payload: { expiresAt?: string; type?: string }, 
+  authToken: string
+): Promise<ApiResponse<any>> {
+  return call(`/api/documents/${id}/public-share`, { method: 'POST', body: JSON.stringify(payload) }, authToken);
+}
+
+export async function shareDocumentPrivate(
+  id: string, 
+  payload: { sharedWithUserId?: string; email?: string; accessType?: string; type?: string; notify?: boolean }, 
+  authToken: string
+): Promise<ApiResponse<any>> {
+  return call(`/api/documents/${id}/share`, { method: 'POST', body: JSON.stringify(payload) }, authToken);
+}
+
+// ─── User Management ──────────────────────────────────────────────────────
+
+export async function updateUser(
+  id: string,
+  payload: any,
+  authToken: string
+): Promise<ApiResponse> {
+  return call(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, authToken);
+}
+
+export async function getCompanyUsers(
+  authToken: string,
+  page: number = 1,
+  limit: number = 50,
+  search?: string
+): Promise<ApiResponse<User[]>> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search) query.set("search", search);
+  return call(`/api/users?${query}`, { method: 'GET' }, authToken);
+}
+
+// ─── Reports ────────────────────────────────────────────────────────────────
+
+export interface ReportSummary {
+  period: {
+    from: string;
+    to: string;
+  };
+  currency: string;
+  cost: {
+    total: string;
+    document_count: number;
+  };
+  sales: {
+    total: string;
+    document_count: number;
+  };
+  profit: string;
+  vat: {
+    on_sales: string;
+    on_cost: string;
+    net_payable: string;
+    on_cost_excluded_receipts: string;
+    receipt_count: number;
+  };
+  bank: {
+    paid: string;
+    received: string;
+    balance?: string;
+  };
+}
+
+export async function getReportSummary(
+  authToken: string,
+  from?: string,
+  to?: string,
+  currency?: string
+): Promise<ApiResponse<ReportSummary>> {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+  if (currency) params.append('currency', currency);
+  
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  return call<ReportSummary>(`/api/reports/summary${queryString}`, { method: 'GET' }, authToken);
 }

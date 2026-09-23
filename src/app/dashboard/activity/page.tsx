@@ -62,10 +62,10 @@ export default function ActivityPage() {
     setLoading(false);
     
     if (res.success && res.data) {
-      const paged = res.data as { data?: AuditLog[]; meta?: any };
-      setLogs(paged.data || []);
-      setTotalPages(paged.meta?.totalPages || 1);
-      setTotal(paged.meta?.total || 0);
+      const logs = res.data as AuditLog[];
+      setLogs(logs || []);
+      setTotalPages(1);
+      setTotal(logs.length || 0);
     } else {
       showToast(res.error || "Failed to load activity logs", "error");
     }

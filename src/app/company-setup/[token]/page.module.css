@@ -1,0 +1,630 @@
+/* ═══════════════════════════════════════════════
+   Accept Invite Page — matches Login B&W + Yellow theme
+   ═══════════════════════════════════════════════ */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  background: #1B1480;
+  font-family: var(--font-sans);
+  position: relative;
+  overflow: hidden;
+  /* Changed from hidden to auto to allow scrolling if content is too large */
+}
+
+.page::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 20%;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(ellipse at center, transparent 30%, #FFB800 30.5%, #FFB800 45%, transparent 45.5%);
+  z-index: 0;
+  transform: rotate(-15deg);
+  opacity: 0.5;
+}
+
+.page::after {
+  content: "";
+  position: absolute;
+  bottom: -30%;
+  left: -20%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, transparent 40%, #FFB800 40.5%, #FFB800 55%, transparent 55.5%);
+  z-index: 0;
+  transform: rotate(20deg);
+  opacity: 0.5;
+}
+
+/* ── Brand Side (Left) ── */
+.brandSide {
+  flex: 1.2;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 80px;
+  color: #ffffff;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* subtle center glow */
+
+.brandContent {
+  position: relative;
+  z-index: 10;
+  max-width: 340px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.brandBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: var(--text-xs);
+    line-height: var(--line-height-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.brandBadgeDot {
+  width: 6px;
+  height: 6px;
+  background: #FFB800;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 184, 0, 0.6);
+  animation: pulse 2s infinite;
+}
+
+.brandTitle {
+  font-size: 52px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin-bottom: 16px;
+}
+
+.brandTitle span {
+  display: block;
+  opacity: 0.6;
+  font-weight: 300;
+  font-size: 0.85em;
+  margin-bottom: 4px;
+}
+
+.brandTitle em {
+  font-style: normal;
+  color: #FFB800;
+}
+
+.brandSubtitle {
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
+/* ── Form Side (Right) ── */
+.formSide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 40px;
+  /* Reduced top/bottom padding to fit better */
+  position: relative;
+  z-index: 10;
+  overflow-y: auto;
+  /* Enable scrolling specifically for the form side if needed */
+}
+
+
+
+.dot {
+  width: 4px;
+  height: 4px;
+  background: #000000;
+  border-radius: 50%;
+}
+
+/* ── Scrollable form wrapper ── */
+.formWrapper {
+  width: 100%;
+  max-width: 680px;
+  margin: auto;
+  background: rgba(10, 10, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 24px;
+  padding: 32px 40px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #FFFFFF;
+}
+
+/* ── Logo row ── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  justify-content: center;
+}
+
+.logoIcon {
+  /* background: #000; */
+  /* border: 2px solid #ffb80059; */
+  /* border-radius: 50%; */
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  width: 180px;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  /* box-shadow: 0 0 0 3px #ffb8001a; */
+
+}
+
+.logoLabel {
+  font-size: var(--text-md);
+    line-height: var(--line-height-md);
+  font-weight: var(--font-weight-bold);
+  color: #FFFFFF;
+  letter-spacing: 0.12em;
+}
+
+.logoSub {
+  font-size: 11px;
+  color: #999999;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Invite Banner ── */
+.inviteBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 184, 0, 0.07);
+  border: 1px solid rgba(255, 184, 0, 0.25);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  color: #7A3800;
+}
+
+.inviteBannerText {
+  font-size: 11px;
+  color: #888888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inviteBannerCompany {
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+  font-weight: var(--font-weight-bold);
+  color: #FFFFFF;
+  margin-top: 2px;
+}
+
+/* ── Meta row (invited email) ── */
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f8f8;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+}
+
+.metaLabel {
+  font-size: 11px;
+  color: #999999;
+  flex-shrink: 0;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metaValue {
+  font-size: var(--text-sm);
+    line-height: var(--line-height-sm);
+  color: #FFFFFF;
+  font-weight: var(--font-weight-medium);
+  margin-left: auto;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* ── Title ── */
+.title {
+  font-size: var(--text-3xl);
+    line-height: var(--line-height-3xl);
+  font-weight: var(--font-weight-bold);
+  color: #FFFFFF;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+  color: #a1a1aa;
+  margin-bottom: 28px;
+}
+
+/* ── Form ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Field group (icon + input) ── */
+.fieldGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+}
+
+.fieldGroup:focus-within {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 184, 0, 0.5);
+  box-shadow: 0 0 0 4px rgba(255, 184, 0, 0.1);
+}
+
+.fieldIcon {
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.fieldGroup:focus-within .fieldIcon {
+  color: #FFB800;
+}
+
+.fieldInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+  color: #FFFFFF;
+  padding: 0;
+  outline: none;
+  width: 100%;
+}
+
+.fieldInput::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.fieldGroup.readOnly {
+  opacity: 0.6;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+/* ── Eye toggle ── */
+.eyeInline {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #a1a1aa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.eyeInline:hover {
+  color: #FFFFFF;
+  transform: scale(1.1);
+}
+
+/* ── Password strength ── */
+.strengthBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.strengthTrack {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+}
+
+.strengthSegment {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background 0.3s ease;
+}
+
+.strengthLabel {
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  min-width: 40px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Error box ── */
+.errorBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 77, 77, 0.15);
+  border-left: 4px solid #ff4d4d;
+  color: #ff9999;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+    line-height: var(--line-height-sm);
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Submit button ── */
+.submitBtn {
+  width: 100%;
+  margin-top: 12px;
+  height: 52px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFC840, #FFB800);
+  color: #000000;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(255, 184, 0, 0.25);
+  text-transform: uppercase;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #FFC840;
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(255, 184, 0, 0.30);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(255, 184, 0, 0.20);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Loading state ── */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+}
+
+/* ── Success state ── */
+.successState {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.successTitle {
+  font-size: 26px;
+  font-weight: var(--font-weight-bold);
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.successText {
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.loginHint {
+  font-size: var(--text-sm);
+    line-height: var(--line-height-sm);
+  border: 1px solid rgba(255, 184, 0, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  line-height: 1.5;
+}
+
+/* ── Fixed Logo Badge (top-right, only on mobile / standalone view) ── */
+.logoBadge {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #000000;
+  border: 2px solid rgba(255, 184, 0, 0.35);
+  box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.10), 0 4px 16px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 200;
+  display: none;
+  /* Hidden on desktop — brand side shows the logo */
+}
+
+.logoBadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ════════════════════════════
+   Animations
+   ════════════════════════════ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  80% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ════════════════════════════
+   Responsive
+   ════════════════════════════ */
+@media (max-width: 1024px) {
+  .brandSide {
+    display: none;
+  }
+
+  .formSide {
+    width: 100%;
+    padding: 40px 16px;
+    background: transparent;
+  }
+
+  .logoBadge {
+    display: block;
+    /* show floating logo on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .formSide {
+    padding: 32px 20px;
+  }
+
+  .title {
+    font-size: var(--text-2xl);
+      line-height: var(--line-height-2xl);
+  }
+}

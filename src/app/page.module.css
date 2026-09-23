@@ -41,7 +41,7 @@
 .intro h1 {
   max-width: 320px;
   font-size: 40px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   line-height: 48px;
   letter-spacing: -2.4px;
   text-wrap: balance;
@@ -50,14 +50,15 @@
 
 .intro p {
   max-width: 440px;
-  font-size: 18px;
+  font-size: var(--text-lg);
+    line-height: var(--line-height-lg);
   line-height: 32px;
   text-wrap: balance;
   color: var(--text-secondary);
 }
 
 .intro a {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--text-primary);
 }
 
@@ -67,7 +68,8 @@
   width: 100%;
   max-width: 440px;
   gap: 16px;
-  font-size: 14px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
 }
 
 .ctas a {
@@ -81,7 +83,7 @@
   transition: 0.2s;
   cursor: pointer;
   width: fit-content;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 a.primary {
@@ -117,7 +119,8 @@ a.secondary {
   }
 
   .intro h1 {
-    font-size: 32px;
+    font-size: var(--text-3xl);
+      line-height: var(--line-height-3xl);
     line-height: 40px;
     letter-spacing: -1.92px;
   }

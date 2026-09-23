@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Search, X, Check,
   FileText, Briefcase, Edit2, Trash2
@@ -16,6 +16,13 @@ import {
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import styles from "../companies/page.module.css"; // Reuse companies styles
+
+// Unified Components
+import { Button } from "@/components/ui/Button/Button";
+import { Input } from "@/components/ui/Input/Input";
+import { Badge } from "@/components/ui/Badge/Badge";
+import { Table, type Column } from "@/components/ui/Table/Table";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
 interface DepartmentForm {
   name: string;
@@ -128,157 +135,157 @@ export default function DepartmentsPage() {
     d.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const columns = useMemo<Column<Department>[]>(() => [
+    {
+      key: "index",
+      header: "#",
+      width: "50px",
+      render: (_, i) => <span style={{ color: 'var(--text-muted)' }}>{i + 1}</span>
+    },
+    {
+      key: "name",
+      header: "Department Name",
+      render: (dept) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Briefcase size={14} style={{ color: 'var(--color-primary)' }} />
+          <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{dept.name}</span>
+        </div>
+      )
+    },
+    {
+      key: "createdAt",
+      header: "Created At",
+      render: (dept) => (
+        <span style={{ color: 'var(--text-secondary)' }}>
+          {dept.createdAt ? new Date(dept.createdAt).toLocaleDateString() : "—"}
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (dept) => (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            title="Edit Department"
+            onClick={() => startEdit(dept)}
+          >
+            <Edit2 size={14} />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-danger"
+            title="Delete Department"
+            onClick={() => handleDelete(dept.id, dept.name)}
+            disabled={deletingId === dept.id}
+          >
+            {deletingId === dept.id ? <span className="spinner" /> : <Trash2 size={14} color="var(--color-danger-text)" />}
+          </Button>
+        </div>
+      )
+    }
+  ], [deletingId]);
+
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={{ padding: 'var(--space-8) 36px', animation: 'fadeIn 0.3s ease' }}>
       {/* Header */}
-      <div className={styles.header}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
         <div>
-          <h1 className={styles.title}>Departments</h1>
-          <p className={styles.subtitle}>
+          <h1 className="text-page-title text-text-primary">Departments</h1>
+          <p className="text-text-secondary text-sm" style={{ marginTop: 'var(--space-1)' }}>
             Manage organizational departments
           </p>
         </div>
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
+          leftIcon={<Plus size={16} />}
           onClick={() => { setShowCreateForm(true); setEditingId(null); setCreateForm(EMPTY_FORM); }}
           id="create-department-btn"
         >
-          <Plus size={16} />
           New Department
-        </button>
+        </Button>
       </div>
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className={styles.createCard}>
-          <div className={styles.createCardHeader}>
-            <Briefcase size={18} className={styles.createIcon} />
-            <span className={styles.createTitle}>{editingId ? "Edit Department" : "New Department"}</span>
-          </div>
-          <div className={styles.createFields}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                <FileText size={13} /> Department Name <span className={styles.required}>*</span>
-              </label>
-              <input
-                id="new-department-name"
-                type="text"
-                className="form-input"
-                placeholder="E.g. Human Resources"
-                value={createForm.name}
-                onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                autoFocus
-              />
+        <Card className="mb-6" style={{ marginBottom: 'var(--space-6)', maxWidth: '600px' }}>
+          <CardHeader
+            title={editingId ? "Edit Department" : "New Department"}
+            action={
+              <Button variant="ghost" size="sm" onClick={() => { setShowCreateForm(false); setCreateForm(EMPTY_FORM); setEditingId(null); }}>
+                <X size={16} />
+              </Button>
+            }
+          />
+          <CardBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-department-name">
+                  Department Name <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
+                <Input
+                  id="new-department-name"
+                  type="text"
+                  placeholder="E.g. Human Resources"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                  autoFocus
+                />
+              </div>
             </div>
-          </div>
-          <div className={styles.createActions}>
-            <button
-              className="btn btn-primary"
-              onClick={handleCreate}
-              disabled={creating || !createForm.name.trim()}
-              id="confirm-create-department-btn"
-            >
-              {creating ? <span className="spinner" /> : <Check size={16} />}
-              {editingId ? "Save Changes" : "Create Department"}
-            </button>
-            <button
-              className="btn btn-ghost"
-              onClick={() => { setShowCreateForm(false); setCreateForm(EMPTY_FORM); setEditingId(null); }}
-            >
-              <X size={16} />
-              Cancel
-            </button>
-          </div>
-        </div>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
+              <Button
+                variant="primary"
+                onClick={handleCreate}
+                disabled={creating || !createForm.name.trim()}
+                loading={creating}
+                leftIcon={<Check size={16} />}
+                id="confirm-create-department-btn"
+              >
+                {editingId ? "Save Changes" : "Create Department"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { setShowCreateForm(false); setCreateForm(EMPTY_FORM); setEditingId(null); }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Toolbar */}
-      <div className={styles.toolbar}>
-        <div className={styles.searchWrapper}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '360px' }}>
+          <Input
             id="departments-search"
             type="text"
-            className={`form-input ${styles.searchInput}`}
+            leftIcon={<Search size={15} />}
             placeholder="Search departments…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <span className={styles.countBadge}>
+        <Badge variant="neutral">
           {filtered.length} {filtered.length === 1 ? "department" : "departments"}
-        </span>
+        </Badge>
       </div>
 
       {/* Table */}
-      <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Department Name</th>
-              <th>Created At</th>
-              <th style={{ width: '100px', textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={4} className={styles.emptyRow}>
-                  <span className="spinner" /> Loading departments…
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={4} className={styles.emptyRow}>
-                  {search
-                    ? "No departments match your search"
-                    : "No departments yet. Create one above."}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((dept, i) => (
-                <tr key={dept.id} className={styles.tableRow}>
-                  <td className={styles.indexCell}>{i + 1}</td>
-                  <td>
-                    <div className={styles.nameCell}>
-                      <span className={styles.companyIcon}>
-                        <Briefcase size={14} />
-                      </span>
-                      <span className={styles.companyName}>{dept.name}</span>
-                    </div>
-                  </td>
-                  <td className={styles.dateCell}>
-                    {dept.createdAt
-                      ? new Date(dept.createdAt).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionsCell} style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button 
-                        className="btn btn-ghost btn-sm" 
-                        title="Edit Department"
-                        onClick={() => startEdit(dept)}
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
-                        className="btn btn-danger btn-sm" 
-                        title="Delete Department"
-                        onClick={() => handleDelete(dept.id, dept.name)}
-                        disabled={deletingId === dept.id}
-                      >
-                        {deletingId === dept.id ? <span className="spinner" /> : <Trash2 size={14} />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card padding="none">
+        <Table
+          columns={columns}
+          data={filtered}
+          loading={loading}
+          emptyMessage={search ? "No departments match your search" : "No departments yet. Create one above."}
+        />
+      </Card>
 
       <ConfirmDialog
         isOpen={confirmOpen}

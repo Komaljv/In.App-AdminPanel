@@ -15,7 +15,7 @@
 
 .title {
   font-size: var(--text-2xl);
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
 }
@@ -88,7 +88,7 @@
 .countBadge {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   margin-left: auto;
 }
 
@@ -115,7 +115,7 @@
   padding: var(--space-3) var(--space-5);
   text-align: left;
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -178,7 +178,7 @@
 }
 
 .categoryName {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 

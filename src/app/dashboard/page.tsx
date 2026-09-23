@@ -11,6 +11,7 @@ import {
   getRecentActivity,
   type DashboardStats,
 } from "@/lib/api";
+import { isAdminUser } from "@/lib/role-utils";
 
 interface ActivityItem {
   email?: string;
@@ -64,7 +65,7 @@ export default function DashboardPage() {
       icon: Users,
       color: "#111827", // Accent black
     },
-    ...(((user as any)?.isSuperAdmin === true) ? [{
+    ...(isAdminUser(user) ? [{
       label: "Total Companies",
       value: stats?.totalCompanies ?? "—",
       icon: Building2,
@@ -105,6 +106,7 @@ export default function DashboardPage() {
             className={`${styles.statCard} ${isPending ? styles.pendingCard : ""}`}
           >
             <div className={styles.statTop}>
+              <h3 className={styles.statLabel}>{label}</h3>
               <div
                 className={styles.statIcon}
                 style={{ color }}
@@ -119,7 +121,6 @@ export default function DashboardPage() {
                 String(value)
               )}
             </p>
-            <p className={styles.statLabel}>{label}</p>
           </div>
         ))}
       </div>
@@ -150,9 +151,9 @@ export default function DashboardPage() {
                   e.currentTarget.style.boxShadow = "var(--shadow-sm)";
                 }}
               >
-                <p className={styles.statLabel} style={{ fontWeight: 600, color: "#111827" }}>
+                <h3 className={styles.statLabel} style={{ fontWeight: 600, color: "#111827" }}>
                   {cat.name}
-                </p>
+                </h3>
                 <p className={styles.statValue} style={{ fontSize: "1.5rem" }}>
                   {cat.documentCount} <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>documents</span>
                 </p>

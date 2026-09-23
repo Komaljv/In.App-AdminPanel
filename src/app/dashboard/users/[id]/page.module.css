@@ -33,7 +33,7 @@
 
 .title {
   font-size: var(--text-2xl);
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
 }
@@ -84,7 +84,7 @@
   align-items: center;
   justify-content: center;
   font-size: var(--text-2xl);
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   color: var(--color-on-primary);
   margin-bottom: var(--space-4);
   box-shadow: var(--shadow-md);
@@ -92,7 +92,7 @@
 
 .profileName {
   font-size: var(--text-lg);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
 
@@ -120,12 +120,12 @@
 
 .metaLabel {
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .metaValue {
   color: var(--color-text-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ── Stats Grid ── */
@@ -193,14 +193,14 @@
 
 .statVal {
   font-size: var(--text-2xl);
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   margin-top: var(--space-2);
 }
 
 .statTitle {
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-secondary);
@@ -221,7 +221,7 @@
 
 .sectionTitle {
   font-size: var(--text-base);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   margin-bottom: var(--space-4);
   display: flex;
@@ -246,7 +246,7 @@
 }
 
 .listItemText {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   font-size: var(--text-sm);
 }
@@ -259,7 +259,7 @@
 
 .listItemBadge {
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   padding: 4px var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-primary-subtle);
@@ -324,7 +324,7 @@
 
 .timelineFile {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
@@ -400,7 +400,7 @@
   color: var(--color-primary);
   text-decoration: underline;
   word-break: break-all;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .nestedFileLink:hover {
@@ -436,7 +436,7 @@
 
 .table th {
   padding: var(--space-3) var(--space-4);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-bg-subtle);
@@ -465,6 +465,6 @@
 }
 
 .dateCell {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }

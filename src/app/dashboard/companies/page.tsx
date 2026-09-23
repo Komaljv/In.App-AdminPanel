@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Search, Pencil, Trash2, Building2, X, Check,
-  ChevronLeft, ChevronRight, FileText, Hash,
+  ChevronLeft, ChevronRight, FileText, Hash, Mail
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
@@ -12,30 +12,96 @@ import {
   createCompany,
   updateCompany,
   deleteCompany,
+  createCustomPlan,
   type Company,
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import styles from "./page.module.css";
+import { useRouter } from "next/navigation";
+import { isSystemAdmin } from "@/lib/role-utils";
+
+// Unified Components
+import { Button } from "@/components/ui/Button/Button";
+import { Input } from "@/components/ui/Input/Input";
+import { Badge } from "@/components/ui/Badge/Badge";
+import { Table, type Column } from "@/components/ui/Table/Table";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
 interface CompanyForm {
-  name: string;
+  companyName: string;
+  email: string;
   fiscalCode: string;
 }
 
-const EMPTY_FORM: CompanyForm = { name: "", fiscalCode: "" };
+const EMPTY_FORM: CompanyForm = { companyName: "", email: "", fiscalCode: "" };
 
-import { useRouter } from "next/navigation";
+function formatBytes(bytes: number, decimals = 2) {
+  if (!+bytes) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+function UsageCell({ usage }: { usage: Company['usage'] }) {
+  if (!usage) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+
+  const usersUsed = usage.users?.used ?? 0;
+  const usersMax = usage.users?.max ?? 0;
+  const usersPercentage = usage.users?.percentage ?? 0;
+
+  const storageUsed = usage.storage?.usedStorageBytes ?? 0;
+  const storageMax = usage.storage?.maxBytes ?? 0;
+  const storagePercentage = usage.storage?.percentage ?? 0;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
+      {/* Users Progress */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span>Users</span>
+          <span>{usersUsed} / {usersMax === 0 ? '∞' : usersMax}</span>
+        </div>
+        <div style={{ height: '6px', backgroundColor: 'var(--color-bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ 
+            height: '100%', 
+            backgroundColor: usersPercentage > 90 ? 'var(--color-danger)' : usersPercentage > 75 ? 'var(--color-warning)' : 'var(--color-primary)', 
+            width: `${Math.min(usersPercentage, 100)}%` 
+          }} />
+        </div>
+      </div>
+
+      {/* Storage Progress */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span>Storage</span>
+          <span>{formatBytes(storageUsed)} / {storageMax === 0 ? '∞' : formatBytes(storageMax)}</span>
+        </div>
+        <div style={{ height: '6px', backgroundColor: 'var(--color-bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ 
+            height: '100%', 
+            backgroundColor: storagePercentage > 90 ? 'var(--color-danger)' : storagePercentage > 75 ? 'var(--color-warning)' : 'var(--color-success)', 
+            width: `${Math.min(storagePercentage, 100)}%` 
+          }} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function CompaniesPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
 
-  // Redirect non-super admins
+  // Redirect non-admins
   useEffect(() => {
-    if (user && !(user as any).isSuperAdmin) {
-      router.replace("/dashboard");
-      showToast("Unauthorized access", "error");
+    if (user) {
+      if (!isSystemAdmin(user)) {
+        router.replace("/dashboard");
+        showToast("Unauthorized access", "error");
+      }
     }
   }, [user, router, showToast]);
 
@@ -61,6 +127,8 @@ export default function CompaniesPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingName, setDeletingName] = useState("");
+
+
 
   const fetchCompanies = useCallback(async () => {
     if (!user?.token) return;
@@ -90,10 +158,25 @@ export default function CompaniesPage() {
   }, [fetchCompanies]);
 
   const handleCreate = async () => {
-    if (!createForm.name.trim() || !user?.token) return;
+    if (!createForm.companyName.trim() || !createForm.email.trim() || !user?.token) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(createForm.email.trim())) {
+      showToast("Please enter a valid email address.", "error");
+      return;
+    }
+
+    if (createForm.fiscalCode.trim()) {
+      const vatClean = createForm.fiscalCode.trim().replace(/[\s\-]/g, "");
+      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean)) {
+        showToast("Please enter a valid VAT number (5-20 alphanumeric characters).", "error");
+        return;
+      }
+    }
+
     setCreating(true);
     const res = await createCompany(
-      { name: createForm.name.trim(), fiscalCode: createForm.fiscalCode.trim() || undefined },
+      { name: createForm.companyName.trim(), email: createForm.email.trim(), fiscalCode: createForm.fiscalCode.trim() || undefined },
       user.token
     );
     setCreating(false);
@@ -101,7 +184,7 @@ export default function CompaniesPage() {
       await fetchCompanies();
       setCreateForm(EMPTY_FORM);
       setShowCreateForm(false);
-      showToast("Company created", "success");
+      showToast(res.message || "Company created", "success");
     } else {
       showToast(res.error || "Failed to create company", "error");
     }
@@ -109,7 +192,7 @@ export default function CompaniesPage() {
 
   const startEdit = (company: Company) => {
     setEditingId(company.id);
-    setEditForm({ name: company.name, fiscalCode: company.fiscalCode ?? "" });
+    setEditForm({ companyName: company.name, email: "", fiscalCode: company.fiscalCode ?? "" });
   };
 
   const cancelEdit = () => {
@@ -118,11 +201,20 @@ export default function CompaniesPage() {
   };
 
   const handleUpdate = async (id: string) => {
-    if (!editForm.name.trim() || !user?.token) return;
+    if (!editForm.companyName.trim() || !user?.token) return;
+
+    if (editForm.fiscalCode.trim()) {
+      const vatClean = editForm.fiscalCode.trim().replace(/[\s\-]/g, "");
+      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean)) {
+        showToast("Please enter a valid VAT number (5-20 alphanumeric characters).", "error");
+        return;
+      }
+    }
+
     setSaving(true);
     const res = await updateCompany(
       id,
-      { name: editForm.name.trim(), fiscalCode: editForm.fiscalCode.trim() || undefined },
+      { name: editForm.companyName.trim(), fiscalCode: editForm.fiscalCode.trim() || undefined },
       user.token
     );
     setSaving(false);
@@ -130,7 +222,7 @@ export default function CompaniesPage() {
       setCompanies((prev) =>
         prev.map((c) =>
           c.id === id
-            ? { ...c, name: editForm.name.trim(), fiscalCode: editForm.fiscalCode.trim() || undefined }
+            ? { ...c, name: editForm.companyName.trim(), fiscalCode: editForm.fiscalCode.trim() || undefined }
             : c
         )
       );
@@ -165,252 +257,215 @@ export default function CompaniesPage() {
     (c.fiscalCode ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const columns = useMemo<Column<Company>[]>(() => [
+    {
+      key: "index",
+      header: "#",
+      width: "50px",
+      render: (_, i) => <span style={{ color: 'var(--text-muted)' }}>{(page - 1) * LIMIT + i + 1}</span>
+    },
+    {
+      key: "name",
+      header: "Company Name",
+      render: (company) => editingId === company.id ? (
+        <Input
+          id={`edit-company-name-${company.id}`}
+          type="text"
+          value={editForm.companyName}
+          onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleUpdate(company.id);
+            if (e.key === "Escape") cancelEdit();
+          }}
+          autoFocus
+        />
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Building2 size={14} style={{ color: 'var(--color-primary)' }} />
+          <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{company.name}</span>
+        </div>
+      )
+    },
+    {
+      key: "fiscalCode",
+      header: "VAT N°",
+      render: (company) => editingId === company.id ? (
+        <Input
+          id={`edit-company-fiscal-${company.id}`}
+          type="text"
+          value={editForm.fiscalCode}
+          placeholder="VAT N° (optional)"
+          onChange={(e) => setEditForm((f) => ({ ...f, fiscalCode: e.target.value }))}
+        />
+      ) : (
+        <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.9em' }}>
+          {company.fiscalCode || <span style={{ opacity: 0.5 }}>—</span>}
+        </span>
+      )
+    },
+    {
+      key: "usage",
+      header: "Usage",
+      render: (company) => <UsageCell usage={company.usage} />
+    },
+    {
+      key: "createdAt",
+      header: "Created",
+      render: (company) => (
+        <span style={{ color: 'var(--text-secondary)' }}>
+          {company.createdAt ? new Date(company.createdAt).toLocaleDateString() : "—"}
+        </span>
+      )
+    },
+    
+  ], [page, LIMIT, editingId, editForm]);
+
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={{ padding: 'var(--space-8) 36px', animation: 'fadeIn 0.3s ease' }}>
       {/* Header */}
-      <div className={styles.header}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
         <div>
-          <h1 className={styles.title}>Companies</h1>
-          <p className={styles.subtitle}>
+          <h1 className="text-page-title text-text-primary">Companies</h1>
+          <p className="text-text-secondary text-sm" style={{ marginTop: 'var(--space-1)' }}>
             Manage organizations and their fiscal information
           </p>
         </div>
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
+          leftIcon={<Plus size={16} />}
           onClick={() => setShowCreateForm(true)}
           id="create-company-btn"
         >
-          <Plus size={16} />
           New Company
-        </button>
+        </Button>
       </div>
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className={styles.createCard}>
-          <div className={styles.createCardHeader}>
-            <Building2 size={18} className={styles.createIcon} />
-            <span className={styles.createTitle}>New Company</span>
-          </div>
-          <div className={styles.createFields}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                <FileText size={13} /> Company Name <span className={styles.required}>*</span>
-              </label>
-              <input
-                id="new-company-name"
-                type="text"
-                className="form-input"
-                placeholder="Acme Corporation"
-                value={createForm.name}
-                onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                autoFocus
-              />
+        <Card className="mb-6" style={{ marginBottom: 'var(--space-6)', maxWidth: '800px' }}>
+          <CardHeader
+            title="New Company"
+            action={
+              <Button variant="ghost" size="sm" onClick={() => { setShowCreateForm(false); setCreateForm(EMPTY_FORM); }}>
+                <X size={16} />
+              </Button>
+            }
+          />
+          <CardBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-company-name">
+                  Company Name <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
+                <Input
+                  id="new-company-name"
+                  type="text"
+                  placeholder="Acme Corporation"
+                  value={createForm.companyName}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, companyName: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-company-email">
+                  Email Master <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
+                <Input
+                  id="new-company-email"
+                  type="email"
+                  placeholder="admin@acme.com"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-company-fiscal">
+                  VAT N° <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
+                </label>
+                <Input
+                  id="new-company-fiscal"
+                  type="text"
+                  placeholder="e.g. IT12345678901"
+                  value={createForm.fiscalCode}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, fiscalCode: e.target.value }))}
+                />
+              </div>
             </div>
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                <Hash size={13} /> Fiscal Code <span className={styles.optional}>(optional)</span>
-              </label>
-              <input
-                id="new-company-fiscal"
-                type="text"
-                className="form-input"
-                placeholder="e.g. IT12345678901"
-                value={createForm.fiscalCode}
-                onChange={(e) => setCreateForm((f) => ({ ...f, fiscalCode: e.target.value }))}
-              />
+            <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
+              <Button
+                variant="primary"
+                onClick={handleCreate}
+                disabled={creating || !createForm.companyName || !createForm.email.trim()}
+                loading={creating}
+                leftIcon={<Check size={16} />}
+                id="confirm-create-company-btn"
+              >
+                Create Company
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { setShowCreateForm(false); setCreateForm(EMPTY_FORM); }}
+              >
+                Cancel
+              </Button>
             </div>
-          </div>
-          <div className={styles.createActions}>
-            <button
-              className="btn btn-primary"
-              onClick={handleCreate}
-              disabled={creating || !createForm.name.trim()}
-              id="confirm-create-company-btn"
-            >
-              {creating ? <span className="spinner" /> : <Check size={16} />}
-              Create Company
-            </button>
-            <button
-              className="btn btn-ghost"
-              onClick={() => { setShowCreateForm(false); setCreateForm(EMPTY_FORM); }}
-            >
-              <X size={16} />
-              Cancel
-            </button>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Toolbar */}
-      <div className={styles.toolbar}>
-        <div className={styles.searchWrapper}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '360px' }}>
+          <Input
             id="companies-search"
             type="text"
-            className={`form-input ${styles.searchInput}`}
+            leftIcon={<Search size={15} />}
             placeholder="Search by name or fiscal code…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <span className={styles.countBadge}>
+        <Badge variant="neutral">
           {total} {total === 1 ? "company" : "companies"}
-        </span>
+        </Badge>
       </div>
 
       {/* Table */}
-      <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Company Name</th>
-              <th>Fiscal Code</th>
-              <th>Created</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  <span className="spinner" /> Loading companies…
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  {search
-                    ? "No companies match your search"
-                    : "No companies yet. Create one above."}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((company, i) => (
-                <tr key={company.id} className={styles.tableRow}>
-                  <td className={styles.indexCell}>
-                    {(page - 1) * LIMIT + i + 1}
-                  </td>
-                  <td>
-                    {editingId === company.id ? (
-                      <input
-                        id={`edit-company-name-${company.id}`}
-                        type="text"
-                        className="form-input"
-                        value={editForm.name}
-                        onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleUpdate(company.id);
-                          if (e.key === "Escape") cancelEdit();
-                        }}
-                        autoFocus
-                      />
-                    ) : (
-                      <div className={styles.nameCell}>
-                        <span className={styles.companyIcon}>
-                          <Building2 size={14} />
-                        </span>
-                        <span className={styles.companyName}>{company.name}</span>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    {editingId === company.id ? (
-                      <input
-                        id={`edit-company-fiscal-${company.id}`}
-                        type="text"
-                        className="form-input"
-                        value={editForm.fiscalCode}
-                        placeholder="Fiscal code (optional)"
-                        onChange={(e) => setEditForm((f) => ({ ...f, fiscalCode: e.target.value }))}
-                      />
-                    ) : (
-                      <span className={styles.fiscalCode}>
-                        {company.fiscalCode || <span className={styles.na}>—</span>}
-                      </span>
-                    )}
-                  </td>
-                  <td className={styles.dateCell}>
-                    {company.createdAt
-                      ? new Date(company.createdAt).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td>
-                    {editingId === company.id ? (
-                      <div className={styles.actions}>
-                        <button
-                          className="btn btn-primary"
-                          style={{ padding: "6px 14px", fontSize: 13 }}
-                          onClick={() => handleUpdate(company.id)}
-                          disabled={saving}
-                          id={`save-company-${company.id}`}
-                        >
-                          {saving ? <span className="spinner" /> : <Check size={14} />}
-                          Save
-                        </button>
-                        <button
-                          className="btn btn-ghost"
-                          style={{ padding: "6px 10px" }}
-                          onClick={cancelEdit}
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className={styles.actions}>
-                        <button
-                          className={styles.actionBtn}
-                          onClick={() => startEdit(company)}
-                          title="Edit company"
-                          id={`edit-company-btn-${company.id}`}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          className={`${styles.actionBtn} ${styles.actionDanger}`}
-                          onClick={() => openDelete(company)}
-                          title="Delete company"
-                          id={`delete-company-btn-${company.id}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card padding="none">
+        <Table
+          columns={columns}
+          data={filtered}
+          loading={loading}
+          emptyMessage={search ? "No companies match your search" : "No companies yet. Create one above."}
+        />
+      </Card>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            className="btn btn-ghost"
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
+          <Button
+            variant="ghost"
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
+            leftIcon={<ChevronLeft size={16} />}
             id="companies-prev-page"
           >
-            <ChevronLeft size={16} />
             Previous
-          </button>
-          <span className={styles.pageInfo}>
+          </Button>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
             Page {page} of {totalPages}
           </span>
-          <button
-            className="btn btn-ghost"
+          <Button
+            variant="ghost"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
+            rightIcon={<ChevronRight size={16} />}
             id="companies-next-page"
           >
             Next
-            <ChevronRight size={16} />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -427,4 +482,3 @@ export default function CompaniesPage() {
     </div>
   );
 }
-

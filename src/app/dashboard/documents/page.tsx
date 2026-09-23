@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Filter, FileText, Download, History } from "lucide-react";
+import { Search, Filter, FileText, Download, History, Share2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { searchDocuments } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import styles from "./page.module.css";
 import DocumentVersionsModal from "./DocumentVersionsModal";
+import ShareModal from "./ShareModal";
+
+// Unified Components
+import { Button } from "@/components/ui/Button/Button";
+import { Input } from "@/components/ui/Input/Input";
+import { Badge } from "@/components/ui/Badge/Badge";
+import { Table, type Column } from "@/components/ui/Table/Table";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
 interface DocumentItem {
   id: string;
@@ -37,6 +45,7 @@ function DocumentsPageContent() {
   const LIMIT = 20;
 
   const [selectedDocument, setSelectedDocument] = useState<{ id: string; name: string } | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: string; name: string } | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     if (!authUser?.token) return;
@@ -49,12 +58,17 @@ function DocumentsPageContent() {
     };
     const res = await searchDocuments(authUser.token, params);
     setLoading(false);
-    
     if (res.success && res.data) {
-      const paged = res.data as { data?: DocumentItem[]; meta?: any };
-      setDocuments(paged.data || []);
-      setTotalPages(paged.meta?.totalPages || 1);
-      setTotal(paged.meta?.total || 0);
+      if (Array.isArray(res.data)) {
+        setDocuments(res.data);
+        setTotalPages(1);
+        setTotal(res.data.length);
+      } else {
+        const paged = res.data as { data?: DocumentItem[]; meta?: any };
+        setDocuments(paged.data || []);
+        setTotalPages(paged.meta?.totalPages || 1);
+        setTotal(paged.meta?.total || 0);
+      }
     } else {
       showToast(res.error || "Failed to load documents", "error");
     }
@@ -93,114 +107,107 @@ function DocumentsPageContent() {
     document.body.removeChild(link);
   };
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Documents</h1>
-          <p className={styles.subtitle}>Global view of all system documents</p>
+  const columns = useMemo<Column<DocumentItem>[]>(() => [
+    {
+      key: "fileName",
+      header: "File Name",
+      render: (doc) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FileText size={16} style={{ color: 'var(--color-primary)' }} />
+          <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{doc.fileName}</span>
         </div>
-        <button
-          className="btn btn-outline"
+      )
+    },
+    {
+      key: "category",
+      header: "Category",
+      render: (doc) => doc.category ? (
+        <Badge variant="info">{doc.category.name}</Badge>
+      ) : <span style={{ color: 'var(--text-muted)' }}>—</span>
+    },
+    {
+      key: "mimeType",
+      header: "Type",
+      render: (doc) => <span style={{ color: 'var(--text-secondary)' }}>{doc.mimeType}</span>
+    },
+    {
+      key: "size",
+      header: "Size",
+      render: (doc) => <span style={{ color: 'var(--text-secondary)' }}>{(doc.fileSize / 1024).toFixed(2)} KB</span>
+    },
+    {
+      key: "createdAt",
+      header: "Created At",
+      render: (doc) => <span style={{ color: 'var(--text-secondary)' }}>{new Date(doc.createdAt).toLocaleString()}</span>
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (doc) => (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <Button size="sm" variant="outline" onClick={() => setShareTarget({ id: doc.id, name: doc.fileName })} title="Share Document">
+            <Share2 size={14} />
+            Share
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setSelectedDocument({ id: doc.id, name: doc.fileName })} title="View version history">
+            <History size={14} />
+            Versions
+          </Button>
+        </div>
+      )
+    }
+  ], []);
+
+  return (
+    <div className={styles.page} style={{ padding: 'var(--space-8) 36px', animation: 'fadeIn 0.3s ease' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
+        <div>
+          <h1 className="text-page-title text-text-primary">Documents</h1>
+          <p className="text-text-secondary text-sm" style={{ marginTop: 'var(--space-1)' }}>Global view of all system documents</p>
+        </div>
+        <Button
+          variant="outline"
+          leftIcon={<Download size={16} />}
           onClick={handleExport}
           disabled={documents.length === 0}
         >
-          <Download size={16} />
           Export CSV
-        </button>
+        </Button>
       </div>
 
-      <div className={styles.toolbar}>
-        <div className={styles.searchWrapper}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '360px' }}>
+          <Input
             type="text"
-            className={`form-input ${styles.searchInput}`}
+            leftIcon={<Search size={15} />}
             placeholder="Search documents by name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className={styles.searchWrapper} style={{ maxWidth: '200px' }}>
-          <input
+        <div style={{ position: 'relative', width: '200px' }}>
+          <Input
             type="text"
-            className={`form-input`}
+            leftIcon={<Filter size={15} />}
             placeholder="Category ID filter"
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
           />
         </div>
-        <span className={styles.countBadge}>
+        <Badge variant="neutral">
           {total} documents total
-        </span>
+        </Badge>
       </div>
 
-      <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>File Name</th>
-              <th>Category</th>
-              <th>Type</th>
-              <th>Size</th>
-              <th>Created At</th>
-              <th style={{ textAlign: "right" }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} className={styles.emptyRow}>
-                  <span className="spinner" /> Loading documents...
-                </td>
-              </tr>
-            ) : documents.length === 0 ? (
-              <tr>
-                <td colSpan={6} className={styles.emptyRow}>
-                  No documents found
-                </td>
-              </tr>
-            ) : (
-              documents.map((doc) => (
-                <tr key={doc.id} className={styles.tableRow}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <FileText size={16} className={styles.createIcon} />
-                      <span className={styles.userName}>{doc.fileName}</span>
-                    </div>
-                  </td>
-                  <td>
-                    {doc.category ? (
-                      <span className="badge badge-info">{doc.category.name}</span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td>
-                    <span className={styles.userEmail}>{doc.mimeType}</span>
-                  </td>
-                  <td>
-                    {(doc.fileSize / 1024).toFixed(2)} KB
-                  </td>
-                  <td className={styles.dateCell}>
-                    {new Date(doc.createdAt).toLocaleString()}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setSelectedDocument({ id: doc.id, name: doc.fileName })}
-                      title="View version history"
-                    >
-                      <History size={14} />
-                      Versions
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card padding="none">
+        <Table
+          columns={columns}
+          data={documents}
+          loading={loading}
+          emptyMessage="No documents found"
+        />
+      </Card>
 
       <DocumentVersionsModal
         isOpen={!!selectedDocument}
@@ -208,6 +215,14 @@ function DocumentsPageContent() {
         fileName={selectedDocument?.name || ""}
         onClose={() => setSelectedDocument(null)}
         onRestoreSuccess={fetchDocuments}
+      />
+      
+      <ShareModal
+        isOpen={!!shareTarget}
+        onClose={() => setShareTarget(null)}
+        itemId={shareTarget?.id || ""}
+        itemName={shareTarget?.name || ""}
+        itemType="file"
       />
     </div>
   );

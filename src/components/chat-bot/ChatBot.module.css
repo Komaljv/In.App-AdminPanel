@@ -52,8 +52,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-md);
+    line-height: var(--line-height-md);
 }
 
 .backButton {
@@ -61,7 +62,8 @@
   border: none;
   color: white;
   cursor: pointer;
-  font-size: 18px;
+  font-size: var(--text-lg);
+    line-height: var(--line-height-lg);
   padding: 0 4px;
 }
 
@@ -157,13 +159,15 @@
 }
 
 .convName {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: #1e293b;
-  font-size: 14px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
 }
 
 .convMessage {
-  font-size: 12px;
+  font-size: var(--text-xs);
+    line-height: var(--line-height-xs);
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
@@ -178,8 +182,9 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,7 +200,8 @@
   text-align: center;
   color: #64748b;
   padding: 40px 20px;
-  font-size: 14px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
 }
 
 .userList {
@@ -219,14 +225,16 @@
 }
 
 .userName {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: #1e293b;
-  font-size: 14px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
   flex: 1;
 }
 
 .userEmail {
-  font-size: 12px;
+  font-size: var(--text-xs);
+    line-height: var(--line-height-xs);
   color: #64748b;
 }
 
@@ -263,7 +271,8 @@
 .messageContent {
   padding: 10px 14px;
   border-radius: 16px;
-  font-size: 14px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
   line-height: 1.4;
   position: relative;
 }
@@ -301,7 +310,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   outline: none;
-  font-size: 14px;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
   transition: border-color 0.2s;
 }
 

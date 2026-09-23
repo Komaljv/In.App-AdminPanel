@@ -8,12 +8,13 @@ import {
 } from "lucide-react";
 import { acceptInvite, getInviteDetails } from "@/lib/api";
 import { COUNTRIES } from "@/lib/countries";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 interface FormData {
   companyName: string;
   fiscalNumber: string;
-  masterName: string;
+  name:string;
   masterEmail: string;
   phoneNumber: string;
   password: string;
@@ -33,7 +34,7 @@ export default function AcceptInvitePage() {
   const [form, setForm] = useState<FormData>({
     companyName: urlCompanyName,
     fiscalNumber: urlFiscalCode,
-    masterName: "",
+    name: "",
     masterEmail: "",
     phoneNumber: "",
     password: "",
@@ -94,7 +95,7 @@ export default function AcceptInvitePage() {
     e.preventDefault();
     setError("");
 
-    if (!form.masterName.trim()) { setError("Master name is required."); return; }
+    if (!form.name.trim()) { setError(" name is required."); return; }
     if (!form.masterEmail.trim()) { setError("Master email is required."); return; }
     
     if (form.phoneNumber) {
@@ -112,7 +113,7 @@ export default function AcceptInvitePage() {
 
     setLoading(true);
     const res = await acceptInvite(token, form.password, {
-      name: form.masterName,
+      name: form.name,
       email: form.masterEmail,
       phoneNumber: form.phoneNumber,
       country: form.country,
@@ -168,12 +169,14 @@ export default function AcceptInvitePage() {
               <div className={styles.successIcon}><CheckCircle size={44} /></div>
               <h1 className={styles.successTitle}>Account Created!</h1>
               <p className={styles.successText}>
-                Welcome <strong>{form.masterName || form.masterEmail}</strong>! Your account has been set up successfully.
+                Welcome <strong>{form.name || form.masterEmail}</strong>! Your account has been set up successfully.
               </p>
               <div className={styles.loginHint}>
-                You can now log in using the mobile application !!
+                You can now log in to access your account.
               </div>
-            
+              <Link href="/login" className="btn btn-primary" style={{ marginTop: "24px", width: "100%", textAlign: "center" }}>
+                Go to Login
+              </Link>
             </div>
           </div>
         </div>
@@ -213,16 +216,16 @@ export default function AcceptInvitePage() {
           {/* Header */}
           <div className={styles.logo}>
             <div className={styles.logoIcon}>
-              <img src="/brand/fred_logo.png" alt="Fred" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/brand/FRED_ADM_logo.png" alt="Fred" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
-            <div>
+            {/* <div>
               <p className={styles.logoLabel}>Fred</p>
               <p className={styles.logoSub}>Accept Invitation</p>
-            </div>
+            </div> */}
           </div>
 
           {/* Invited Banner */}
-          {(form.companyName || inviteData?.companyName) && (
+          {/* {(form.companyName || inviteData?.companyName) && (
             <div className={styles.inviteBanner}>
               <Building2 size={18} />
               <div>
@@ -230,15 +233,16 @@ export default function AcceptInvitePage() {
                 <p className={styles.inviteBannerCompany}>{form.companyName || inviteData?.companyName}</p>
               </div>
             </div>
-          )}
+          )} */}
 
       
           <h1 className={styles.title}>Create Account</h1>
           <p className={styles.subtitle}>Fill in your details to complete registration</p>
 
           <form onSubmit={handleSubmit} className={styles.form}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
             {/* Row 1: Company Name */}
-            <div className={`${styles.fieldGroup} ${styles.readOnly}`}>
+            <div className={`${styles.fieldGroup} ${styles.readOnly}`} style={{ marginBottom: 0 }}>
               <div className={styles.fieldIcon}><Building2 size={18} /></div>
               <input
                 id="company-name"
@@ -250,35 +254,35 @@ export default function AcceptInvitePage() {
               />
             </div>
 
-            {/* Row 2: Fiscal Number */}
-            <div className={`${styles.fieldGroup} ${styles.readOnly}`}>
+            {/* Row 2: VAT N° */}
+            <div className={`${styles.fieldGroup} ${styles.readOnly}`} style={{ marginBottom: 0 }}>
               <div className={styles.fieldIcon}><Hash size={18} /></div>
               <input
                 id="fiscal-number"
                 type="text"
                 className={styles.fieldInput}
-                placeholder="Fiscal number"
+                placeholder="VAT N°"
                 value={form.fiscalNumber}
                 readOnly
               />
             </div>
 
             {/* Row 3: Master Name */}
-            <div className={styles.fieldGroup}>
+            <div className={styles.fieldGroup} style={{ marginBottom: 0 }}>
               <div className={styles.fieldIcon}><User size={18} /></div>
               <input
                 id="master-name"
                 type="text"
                 className={styles.fieldInput}
                 placeholder="Master name"
-                value={form.masterName}
-                onChange={set("masterName")}
+                value={form.name}
+                onChange={set("name")}
                 required
               />
             </div>
 
             {/* Row 4: Master Email (auto-filled, editable) */}
-            <div className={`${styles.fieldGroup} ${styles.readOnly}`}>
+            <div className={`${styles.fieldGroup} ${styles.readOnly}`} style={{ marginBottom: 0 }}>
               <div className={styles.fieldIcon}><Mail size={18} /></div>
               <input
                 id="master-email"
@@ -290,58 +294,46 @@ export default function AcceptInvitePage() {
               />
             </div>
 
-            {/* Row 5: Phone Number */}
-            <div className={styles.fieldGroup}>
-              <div className={styles.fieldIcon}><Phone size={18} /></div>
-              <input
-                id="phone-number"
-                type="tel"
-                className={styles.fieldInput}
-                placeholder="Phone number"
-                value={form.phoneNumber}
-                onChange={set("phoneNumber")}
-                maxLength={20}
-              />
-            </div>
-
             {/* Row 6: Password */}
-            <div className={styles.fieldGroup}>
-              <div className={styles.fieldIcon}><Lock size={18} /></div>
-              <div style={{ flex: 1, position: "relative", display: 'flex' }}>
-                <input
-                  id="new-password"
-                  type={showPwd ? "text" : "password"}
-                  className={styles.fieldInput}
-                  placeholder="Password"
-                  value={form.password}
-                  onChange={set("password")}
-                  style={{ paddingRight: 40, width: "100%" }}
-                  required
-                />
-                <button type="button" className={styles.eyeInline} onClick={() => setShowPwd(!showPwd)}>
-                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Password strength */}
-            {form.password && (
-              <div className={styles.strengthBar}>
-                <div className={styles.strengthTrack}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={styles.strengthSegment}
-                      style={{ background: i <= strength ? strengthColor : "#e8e8e8" }}
-                    />
-                  ))}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className={styles.fieldGroup} style={{ marginBottom: 0 }}>
+                <div className={styles.fieldIcon}><Lock size={18} /></div>
+                <div style={{ flex: 1, position: "relative", display: 'flex' }}>
+                  <input
+                    id="new-password"
+                    type={showPwd ? "text" : "password"}
+                    className={styles.fieldInput}
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={set("password")}
+                    style={{ paddingRight: 40, width: "100%" }}
+                    required
+                  />
+                  <button type="button" className={styles.eyeInline} onClick={() => setShowPwd(!showPwd)}>
+                    {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
-                <span className={styles.strengthLabel} style={{ color: strengthColor }}>{strengthLabel}</span>
               </div>
-            )}
+
+              {/* Password strength */}
+              {form.password && (
+                <div className={styles.strengthBar} style={{ marginTop: '8px' }}>
+                  <div className={styles.strengthTrack}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className={styles.strengthSegment}
+                        style={{ background: i <= strength ? strengthColor : "#e8e8e8" }}
+                      />
+                    ))}
+                  </div>
+                  <span className={styles.strengthLabel} style={{ color: strengthColor }}>{strengthLabel}</span>
+                </div>
+              )}
+            </div>
 
             {/* Row 7: Confirm Password */}
-            <div className={styles.fieldGroup}>
+            <div className={styles.fieldGroup} style={{ marginBottom: 0 }}>
               <div className={styles.fieldIcon}><Lock size={18} /></div>
               <div style={{ flex: 1, position: "relative", display: 'flex' }}>
                 <input
@@ -360,8 +352,8 @@ export default function AcceptInvitePage() {
               </div>
             </div>
 
-            {/* Row 8: Country */}
-            <div className={styles.fieldGroup}>
+            {/* Row 8: Location */}
+            <div className={styles.fieldGroup} style={{ marginBottom: 0, gridColumn: '1 / -1' }}>
               <div className={styles.fieldIcon}><Globe size={18} /></div>
               <select
                 id="country"
@@ -370,11 +362,12 @@ export default function AcceptInvitePage() {
                 onChange={set("country")}
                 style={{ appearance: 'none', cursor: 'pointer' }}
               >
-                <option value="">Select Country</option>
+                <option value="" style={{ color: '#fff', backgroundColor: '#1e1e2d' }}>Select Location</option>
                 {COUNTRIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c} style={{ color: '#fff', backgroundColor: '#1e1e2d' }}>{c}</option>
                 ))}
               </select>
+            </div>
             </div>
 
             {/* Error */}

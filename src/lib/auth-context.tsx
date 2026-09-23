@@ -11,6 +11,7 @@ export interface AuthUser {
   roleId: string;
   token: string; // access token
   refreshToken?: string; // optional refresh token
+  canShareDocuments?: boolean;
 }
 
 interface AuthContextType {
@@ -21,7 +22,7 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null); 
 const AUTH_KEY = "crm_admin_auth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {

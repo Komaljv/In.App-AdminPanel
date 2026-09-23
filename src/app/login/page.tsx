@@ -131,13 +131,13 @@ export default function LoginPage() {
 
             <div className={styles.formActions}>
               <label className={styles.checkboxLabel}>
-                <input 
+                {/* <input 
                   type="checkbox" 
                   className={styles.checkbox} 
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
                 />
-                <span>Remember me</span>
+                <span>Remember me</span> */}
               </label>
               <Link href="/forgot-password" className={styles.forgotLink}>
                 Forgot your password?

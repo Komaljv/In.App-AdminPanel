@@ -1,22 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Search, MoreHorizontal, Trash2, UserX, Shield, RefreshCw, BarChart2, Bell } from "lucide-react";
+import { UserPlus, Search, MoreHorizontal, Trash2, UserX, Shield, BarChart2 } from "lucide-react";
 import InviteModal from "@/components/invite-modal/InviteModal";
 import ChangeRoleModal from "@/components/change-role-modal/ChangeRoleModal";
 import NotificationModal from "@/components/notification-modal/NotificationModal";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminUsers, deleteUser, deactivateUser, activateUser, getCompanies, type User, type Company } from "@/lib/api";
+import { getAdminUsers, deleteUser, deactivateUser, activateUser, getCompanies, updateUser, type User, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
+import { isAdminUser } from "@/lib/role-utils";
 import styles from "./page.module.css";
 
-const STATUS_COLORS: Record<string, string> = {
-  active: "badge-success",
-  pending: "badge-warning",
-  inactive: "badge-danger",
-};
+// Unified Components
+import { Button } from "@/components/ui/Button/Button";
+import { Input } from "@/components/ui/Input/Input";
+import { Badge, statusVariant } from "@/components/ui/Badge/Badge";
+import { Table, type Column } from "@/components/ui/Table/Table";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -65,7 +67,6 @@ export default function UsersPage() {
     setLoading(false);
 
     if (res.success && res.data) {
-      // API returns a plain array (not paginated object)
       const list = Array.isArray(res.data) ? res.data : [];
       setUsers(list);
       setTotalPages(1);
@@ -76,12 +77,44 @@ export default function UsersPage() {
     }
   }, [authUser?.token, page, showToast]);
 
+  const handleTogglePublicShare = async (user: User) => {
+    if (!authUser?.token) return;
+    try {
+      const newStatus = !user.canCreatePublicShares;
+      const res = await updateUser(user.id, { canCreatePublicShares: newStatus }, authUser.token);
+      if (res.success) {
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, canCreatePublicShares: newStatus } : u));
+        showToast("User updated successfully", "success");
+      } else {
+        showToast(res.error || "Failed to update user", "error");
+      }
+    } catch (err) {
+      showToast("An error occurred", "error");
+    }
+  };
+
+  const handleTogglePrivateShare = async (user: User) => {
+    if (!authUser?.token) return;
+    try {
+      const newStatus = !user.canShareDocuments;
+      const res = await updateUser(user.id, { canShareDocuments: newStatus }, authUser.token);
+      if (res.success) {
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, canShareDocuments: newStatus } : u));
+        showToast("User updated successfully", "success");
+      } else {
+        showToast(res.error || "Failed to update user", "error");
+      }
+    } catch (err) {
+      showToast("An error occurred", "error");
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   useEffect(() => {
-    if ((authUser as any)?.isSuperAdmin && authUser?.token) {
+    if (isAdminUser(authUser) && authUser?.token) {
       getCompanies(authUser.token, 1, 100).then(res => {
         if (res.success && res.data) {
           const list = Array.isArray(res.data) ? res.data : (res.data as any).items || (res.data as any).data || [];
@@ -149,12 +182,6 @@ export default function UsersPage() {
     setOpenMenu(null);
   };
 
-  const openNotificationModal = (u: User) => {
-    setNotificationUser(u);
-    setIsNotificationOpen(true);
-    setOpenMenu(null);
-  };
-
   const filtered = users.filter((u) => {
     const matchSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -172,6 +199,141 @@ export default function UsersPage() {
     return matchSearch && matchStatus;
   });
 
+  const columns = useMemo<Column<User>[]>(() => {
+    const cols: Column<User>[] = [
+      {
+        key: "user",
+        header: "User",
+        render: (u) => (
+          <div className={styles.userCell}>
+            <div className={styles.userAvatar}>
+              {u.name?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <div>
+              <p className={styles.userName}>{u.name}</p>
+              <p className={styles.userEmail}>{u.email}</p>
+            </div>
+          </div>
+        )
+      }
+    ];
+
+    if (isAdminUser(authUser)) {
+      cols.push({
+        key: "company",
+        header: "Company",
+        render: (u) => (
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {companies.find(c => c.id === u.companyId)?.name || "—"}
+          </span>
+        )
+      });
+    }
+
+    cols.push(
+      {
+        key: "role",
+        header: "Role",
+        render: (u) => <Badge variant="info">{u.role?.name || "Member"}</Badge>
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (u) => {
+          if (u.isInvited) return <Badge variant="warning">pending</Badge>;
+          return <Badge variant={u.isActive !== false ? "success" : "danger"}>
+            {u.isActive !== false ? "active" : "inactive"}
+          </Badge>;
+        }
+      },
+      {
+        key: "joined",
+        header: "Joined",
+        render: (u) => <span className={styles.joinedCell}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</span>
+      },
+      {
+        key: "publicShare",
+        header: "Public Share",
+        render: (u) => (
+          <label className={styles.switch}>
+            <input 
+              type="checkbox" 
+              checked={u.canCreatePublicShares || false} 
+              onChange={() => handleTogglePublicShare(u)} 
+            />
+            <span className={styles.slider}></span>
+          </label>
+        )
+      },
+      {
+        key: "privateShare",
+        header: "Private Share",
+        render: (u) => (
+          <label className={styles.switch}>
+            <input 
+              type="checkbox" 
+              checked={u.canShareDocuments !== false} 
+              onChange={() => handleTogglePrivateShare(u)} 
+            />
+            <span className={styles.slider}></span>
+          </label>
+        )
+      },
+      {
+        key: "actions",
+        header: "",
+        align: "right",
+        render: (u) => (
+          <div className="relative" style={{position: "relative"}}>
+            <button
+              className="btn btn-ghost" style={{padding: "4px"}}
+              onClick={() => setOpenMenu(openMenu === u.id ? null : u.id)}
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {openMenu === u.id && (
+              <div className="menu" style={{position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 'var(--z-dropdown)'}}>
+                <button
+                  className="menu-item"
+                  onClick={() => {
+                    router.push(`/dashboard/users/${u.id}`);
+                    setOpenMenu(null);
+                  }}
+                >
+                  <BarChart2 size={14} style={{ marginRight: 8 }} />
+                  View Analytics
+                </button>
+                <button
+                  className="menu-item"
+                  onClick={() => openRoleModal(u)}
+                >
+                  <Shield size={14} style={{ marginRight: 8 }} />
+                  Change Role
+                </button>
+                <button
+                  className="menu-item"
+                  onClick={() => handleDeactivate(u.id, u.name, u.isActive !== false)}
+                >
+                  <UserX size={14} style={{ marginRight: 8 }} />
+                  {u.isActive !== false ? "Deactivate" : "Reactivate"}
+                </button>
+                <button
+                  className="menu-item menu-item-danger"
+                  onClick={() => handleDelete(u.id, u.name)}
+                >
+                  <Trash2 size={14} style={{ marginRight: 8 }} />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      }
+    );
+
+    return cols;
+  }, [authUser, companies, openMenu]);
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -179,23 +341,22 @@ export default function UsersPage() {
           <h1 className={styles.title}>Users</h1>
           <p className={styles.subtitle}>Manage organization members and roles</p>
         </div>
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
+          leftIcon={<UserPlus size={16} />}
           onClick={() => setIsInviteOpen(true)}
           id="open-invite-modal-btn"
         >
-          <UserPlus size={16} />
           Invite User
-        </button>
+        </Button>
       </div>
 
       <div className={styles.toolbar}>
         <div className={styles.searchWrapper}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
+          <Input
             id="users-search"
             type="text"
-            className={`form-input ${styles.searchInput}`}
+            leftIcon={<Search size={15} />}
             placeholder="Search by name or email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -204,170 +365,60 @@ export default function UsersPage() {
 
         <div className={styles.filters}>
           {["all", "active", "pending", "inactive"].map((s) => (
-            <button
+            <Button
               key={s}
-              className={`${styles.filterBtn} ${statusFilter === s ? styles.filterActive : ""}`}
+              variant={statusFilter === s ? 'secondary' : 'outline'}
+              size="sm"
               onClick={() => setStatusFilter(s)}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
-      <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>User</th>
-              {((authUser as any)?.isSuperAdmin) && <th>Company</th>}
-              <th>Role</th>
-              <th>Status</th>
-              <th>Joined</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  <span className="spinner" /> Loading users...
-                </td>
-              </tr>
-            ) : fetchError ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 28 }}>🔒</span>
-                    <span style={{ color: "var(--accent-danger)", fontWeight: 600 }}>
-                      {fetchError.includes("403") || fetchError.toLowerCase().includes("forbidden")
-                        ? "Access Denied — Admin privileges required"
-                        : fetchError}
-                    </span>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      Please log in as an Admin to view users.
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              filtered.map((u) => (
-                <tr key={u.id} className={styles.tableRow}>
-                  <td>
-                    <div className={styles.userCell}>
-                      <div className={styles.userAvatar}>
-                        {u.name?.charAt(0).toUpperCase() || "U"}
-                      </div>
-                      <div>
-                        <p className={styles.userName}>{u.name}</p>
-                        <p className={styles.userEmail}>{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  {((authUser as any)?.isSuperAdmin) && (
-                    <td>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        {companies.find(c => c.id === u.companyId)?.name || "—"}
-                      </span>
-                    </td>
-                  )}
-                  <td>
-                    <span className="badge badge-info">{u.role?.name || "Member"}</span>
-                  </td>
-                  <td>
-                    {u.isInvited ? (
-                      <span className="badge badge-warning">pending</span>
-                    ) : (
-                      <span className={`badge ${u.isActive !== false ? "badge-success" : "badge-danger"}`}>
-                        {u.isActive !== false ? "active" : "inactive"}
-                      </span>
-                    )}
-                  </td>
-                  <td className={styles.joinedCell}>
-                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
-                  </td>
-                  <td>
-                    <div className={styles.menuWrapper}>
-                      <button
-                        className={styles.menuBtn}
-                        onClick={() => setOpenMenu(openMenu === u.id ? null : u.id)}
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {openMenu === u.id && (
-                        <div className={styles.dropdown}>
-                          <button
-                            className={styles.dropdownItem}
-                            onClick={() => {
-                              router.push(`/dashboard/users/${u.id}`);
-                              setOpenMenu(null);
-                            }}
-                          >
-                            <BarChart2 size={14} style={{ marginRight: 8 }} />
-                            View Analytics
-                          </button>
-                          {/* <button
-                            className={styles.dropdownItem}
-                            onClick={() => openNotificationModal(u)}
-                          >
-                            <Bell size={14} style={{ marginRight: 8 }} />
-                            Send Notification
-                          </button> */}
-                          <button
-                            className={styles.dropdownItem}
-                            onClick={() => openRoleModal(u)}
-                          >
-                            <Shield size={14} style={{ marginRight: 8 }} />
-                            Change Role
-                          </button>
-                          <button
-                            className={styles.dropdownItem}
-                            onClick={() => handleDeactivate(u.id, u.name, u.isActive !== false)}
-                          >
-                            <UserX size={14} style={{ marginRight: 8 }} />
-                            {u.isActive !== false ? "Deactivate" : "Reactivate"}
-                          </button>
-                          <button
-                            className={`${styles.dropdownItem} ${styles.dropdownDanger}`}
-                            onClick={() => handleDelete(u.id, u.name)}
-                          >
-                            <Trash2 size={14} style={{ marginRight: 8 }} />
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card padding="none">
+        {fetchError ? (
+          <div style={{ padding: '3rem', textAlign: 'center' }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 28 }}>🔒</span>
+              <span style={{ color: "var(--color-danger)", fontWeight: 600 }}>
+                {fetchError.includes("403") || fetchError.toLowerCase().includes("forbidden")
+                  ? "Access Denied — Admin privileges required"
+                  : fetchError}
+              </span>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                Please log in as an Admin to view users.
+              </span>
+            </div>
+          </div>
+        ) : (
+          <Table 
+            columns={columns} 
+            data={filtered} 
+            loading={loading}
+            emptyMessage="No users found"
+          />
+        )}
+      </Card>
 
       {totalPages > 1 && (
         <div className={styles.pagination}>
-          <button 
+          <Button 
+            variant="ghost"
             disabled={page === 1} 
             onClick={() => setPage(p => p - 1)}
-            className="btn btn-ghost"
           >
             Previous
-          </button>
-          <span>Page {page} of {totalPages}</span>
-          <button 
+          </Button>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>Page {page} of {totalPages}</span>
+          <Button 
+            variant="ghost"
             disabled={page === totalPages} 
             onClick={() => setPage(p => p + 1)}
-            className="btn btn-ghost"
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
 

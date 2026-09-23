@@ -63,6 +63,8 @@ export interface User {
   createdAt: string;
   isActive?: boolean;
   isInvited?: boolean;
+  canCreatePublicShares?: boolean;
+  canShareDocuments?: boolean;
   role?: Role;
 }
 
@@ -132,6 +134,24 @@ export interface Company {
   name: string;
   fiscalCode?: string;
   createdAt?: string;
+  subscriptionStatus?: string | null;
+  subscriptionPlan?: {
+    name: string;
+    maxUsers?: number | null;
+    maxStorage?: number | null;
+  } | null;
+  usage?: {
+    users?: {
+      used: number;
+      max: number;
+      percentage: number;
+    };
+    storage?: {
+      usedStorageBytes: number;
+      maxBytes: number;
+      percentage: number;
+    };
+  };
 }
 
 // ─── UI Component Props ───────────────────────────────────────────────────────

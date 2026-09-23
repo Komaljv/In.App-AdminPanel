@@ -44,14 +44,16 @@
 }
 
 .title {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: var(--text-lg);
+    line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .subtitle {
-  font-size: 0.875rem;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
   color: var(--text-secondary);
 }
 
@@ -82,7 +84,8 @@
   background-color: rgba(239, 68, 68, 0.1);
   color: var(--accent-danger);
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: var(--text-base);
+    line-height: var(--line-height-base);
   margin-bottom: 24px;
   border: 1px solid rgba(239, 68, 68, 0.2);
 }

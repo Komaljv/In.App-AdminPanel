@@ -47,13 +47,16 @@
 
 .title {
   font-size: var(--text-xl);
-  font-weight: 700;
+  line-height: var(--line-height-xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-tight);
 }
 
 .subtitle {
   font-size: var(--text-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
   margin-top: 3px;
 }
@@ -96,6 +99,8 @@
   padding: var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .selectWrapper {
@@ -112,6 +117,8 @@
   border-radius: var(--radius-sm);
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-base);
+  line-height: var(--line-height-base);
+  font-weight: var(--font-weight-medium);
   font-family: var(--font-sans);
   color: var(--color-text-primary);
   outline: none;
@@ -148,8 +155,9 @@
 
 .infoText {
   font-size: var(--text-xs);
+  line-height: var(--line-height-xs);
+  font-weight: var(--font-weight-regular);
   color: var(--color-info-text);
-  line-height: 1.6;
 }
 
 .errorBox {
@@ -158,8 +166,9 @@
   border-radius: var(--radius-sm);
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-sm);
+  line-height: var(--line-height-sm);
   color: var(--color-danger-text);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .actions {

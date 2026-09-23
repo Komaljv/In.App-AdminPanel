@@ -10,11 +10,12 @@ interface CardProps {
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   elevated?: boolean;
+  style?: React.CSSProperties;
 }
 
-export function Card({ children, className, padding = 'md', elevated = false }: CardProps) {
+export function Card({ children, className, padding = 'md', elevated = false, style }: CardProps) {
   return (
-    <div className={cx(styles.card, styles[`pad-${padding}`], elevated && styles.elevated, className)}>
+    <div className={cx(styles.card, styles[`pad-${padding}`], elevated && styles.elevated, className)} style={style}>
       {children}
     </div>
   );

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, UserPlus, Mail, ShieldCheck, Send, ChevronDown, Building2 } from "lucide-react";
-import { inviteUser, getRoles, getDepartments, getCompanies } from "@/lib/api";
+import { inviteUser, getRoles, getDepartments, getCompanies, getCompany } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
+import { isAdminUser, isSystemAdmin } from "@/lib/role-utils";
 import styles from "./invite-modal.module.css";
 
 interface Role {
@@ -84,7 +85,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
     };
 
     const fetchCompanies = async () => {
-      if (!(user as any)?.isSuperAdmin) return;
+      if (!isAdminUser(user)) return;
       setCompaniesLoading(true);
       const res = await getCompanies(user.token, 1, 100);
       setCompaniesLoading(false);
@@ -108,7 +109,25 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
     if (!email.trim()) { setFieldError("Email is required."); return; }
     if (!roleId) { setFieldError("Please select a role."); return; }
     if (!user?.token) { setFieldError("Not authenticated."); return; }
-    if ((user as any)?.isSuperAdmin && !companyId) { setFieldError("Please select a company."); return; }
+
+    const targetCompanyId = companyId || user.companyId;
+    if (targetCompanyId && !isSystemAdmin(user)) {
+      setLoading(true);
+      try {
+        const compRes = await getCompany(targetCompanyId, user.token);
+        if (compRes.success && compRes.data) {
+          const status = compRes.data.subscriptionStatus;
+          if (!status || (status.toLowerCase() !== 'active' && status.toLowerCase() !== 'trialing')) {
+            setLoading(false);
+            setFieldError("This company does not have an active plan. A plan is required to invite users.");
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to verify company plan", err);
+      }
+      setLoading(false);
+    }
 
     setLoading(true);
     const res = await inviteUser(email.trim(), roleId, user.token, departmentId || undefined, companyId || undefined);
@@ -119,7 +138,11 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
       onSuccess?.();
       onClose();
     } else {
-      setFieldError(res.error || "Failed to send invite.");
+      let errorMsg = res.error || "Failed to send invite.";
+      if (res.error === "USER_LIMIT_REACHED") {
+        errorMsg = "Your company has reached its user limit. Please upgrade your plan to invite more users.";
+      }
+      setFieldError(errorMsg);
     }
   };
 
@@ -200,42 +223,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
             )}
           </div>
 
-          {/* Company selection for Super Admin */}
-          {(user as any)?.isSuperAdmin && (
-            <div className="form-group">
-              <label className="form-label">
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Building2 size={13} /> Assign Company (Required for Super Admins)
-                </span>
-              </label>
-              {companiesLoading ? (
-                <div className={styles.rolesLoading}>
-                  <span className="spinner" style={{ width: 18, height: 18 }} />
-                  <span>Loading companies...</span>
-                </div>
-              ) : (
-                <div className={styles.selectWrapper}>
-                  <select
-                    id="invite-company"
-                    className={styles.roleSelect}
-                    value={companyId}
-                    onChange={(e) => { setCompanyId(e.target.value); setFieldError(""); }}
-                    required
-                  >
-                      <option value="" disabled>Select a company</option>
-                   <>   {console.log("companies", companies)}</>
-                    {companies.map((comp) => (
-                      <option key={comp.id} value={comp.id}>
-                        {comp.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className={styles.selectChevron} size={16} />
-                </div>
-              )}
-            </div>
-          )}
-
+     
           {/* Department selection */}
           <div className="form-group">
             <label className="form-label">
@@ -289,7 +277,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || rolesLoading || !roleId}
+              disabled={loading || rolesLoading || !roleId || !email.trim()}
               id="invite-modal-send"
             >
               {loading ? <span className="spinner" /> : <Send size={15} />}
