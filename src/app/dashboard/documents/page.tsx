@@ -122,7 +122,7 @@ function DocumentsPageContent() {
       key: "category",
       header: "Category",
       render: (doc) => doc.category ? (
-        <Badge variant="info">{doc.category.name}</Badge>
+        <Badge variant="primary">{doc.category.name}</Badge>
       ) : <span style={{ color: 'var(--text-muted)' }}>—</span>
     },
     {
@@ -145,13 +145,23 @@ function DocumentsPageContent() {
       header: "",
       align: "right",
       render: (doc) => (
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <Button size="sm" variant="outline" onClick={() => setShareTarget({ id: doc.id, name: doc.fileName })} title="Share Document">
-            <Share2 size={14} />
+        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            leftIcon={<Share2 size={14} />} 
+            onClick={() => setShareTarget({ id: doc.id, name: doc.fileName })} 
+            title="Share Document"
+          >
             Share
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setSelectedDocument({ id: doc.id, name: doc.fileName })} title="View version history">
-            <History size={14} />
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            leftIcon={<History size={14} />} 
+            onClick={() => setSelectedDocument({ id: doc.id, name: doc.fileName })} 
+            title="View version history"
+          >
             Versions
           </Button>
         </div>
@@ -200,14 +210,12 @@ function DocumentsPageContent() {
         </Badge>
       </div>
 
-      <Card padding="none">
-        <Table
-          columns={columns}
-          data={documents}
-          loading={loading}
-          emptyMessage="No documents found"
-        />
-      </Card>
+      <Table
+        columns={columns}
+        data={documents}
+        loading={loading}
+        emptyMessage="No documents found"
+      />
 
       <DocumentVersionsModal
         isOpen={!!selectedDocument}

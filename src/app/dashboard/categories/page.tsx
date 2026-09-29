@@ -136,7 +136,7 @@ export default function CategoriesPage() {
   const toggleVisibility = async (cat: Category) => {
     if (!user?.token) return;
     const newStatus = cat.isVisible === false ? true : false;
-    const res = await updateCategory(cat.id,   { isVisible: newStatus }, user.token);
+    const res = await updateCategory(cat.id, { name: cat.name, isVisible: newStatus }, user.token);
     if (res.success) {
       setCategories((prev) =>
         prev.map((c) => (c.id === cat.id ? { ...c, isVisible: newStatus } : c))
@@ -226,17 +226,19 @@ export default function CategoriesPage() {
       key: "visibility",
       header: "Visibility",
       render: (cat) => (
-        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
-          <input 
-            type="checkbox" 
-            checked={cat.isVisible !== false} 
-            onChange={() => toggleVisibility(cat)}
-            style={{ width: 16, height: 16, accentColor: 'var(--color-primary)' }}
-          />
-          <span style={{ fontSize: 'var(--text-sm)', color: cat.isVisible !== false ? 'var(--color-success)' : 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label className={styles.switch}>
+            <input 
+              type="checkbox" 
+              checked={cat.isVisible !== false} 
+              onChange={() => toggleVisibility(cat)} 
+            />
+            <span className={styles.slider}></span>
+          </label>
+          <span style={{ fontSize: 'var(--text-sm)', color: cat.isVisible !== false ? 'var(--color-success)' : 'var(--text-muted)', fontWeight: 500 }}>
             {cat.isVisible !== false ? "Visible" : "Hidden"}
           </span>
-        </label>
+        </div>
       )
     },
     {
@@ -354,14 +356,12 @@ export default function CategoriesPage() {
       </div>
 
       {/* Table */}
-      <Card padding="none">
-        <Table
-          columns={columns}
-          data={filtered}
-          loading={loading}
-          emptyMessage={search ? "No categories match your search" : "No categories yet. Create one above."}
-        />
-      </Card>
+      <Table
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyMessage={search ? "No categories match your search" : "No categories yet. Create one above."}
+      />
 
       <ConfirmDialog
         isOpen={confirmOpen}

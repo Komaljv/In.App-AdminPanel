@@ -359,20 +359,20 @@ export default function FoldersPage() {
       )}
 
       {/* Table */}
-      <Card padding="none">
-        {!selectedCategoryId ? (
+      {!selectedCategoryId ? (
+        <Card padding="none">
           <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
             Select a category to view its folders.
           </div>
-        ) : (
-          <Table
-            columns={columns}
-            data={filtered}
-            loading={loading}
-            emptyMessage={search ? "No folders match your search" : "No folders yet. Create one above."}
-          />
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <Table
+          columns={columns}
+          data={filtered}
+          loading={loading}
+          emptyMessage={search ? "No folders match your search" : "No folders yet. Create one above."}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={confirmOpen}

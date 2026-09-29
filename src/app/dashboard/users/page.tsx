@@ -240,8 +240,8 @@ export default function UsersPage() {
         key: "status",
         header: "Status",
         render: (u) => {
-          if (u.isInvited) return <Badge variant="warning">pending</Badge>;
-          return <Badge variant={u.isActive !== false ? "success" : "danger"}>
+          if (u.isInvited) return <Badge variant="warning" dot>pending</Badge>;
+          return <Badge variant={u.isActive !== false ? "success" : "danger"} dot>
             {u.isActive !== false ? "active" : "inactive"}
           </Badge>;
         }
@@ -377,9 +377,8 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <Card padding="none">
         {fetchError ? (
-          <div style={{ padding: '3rem', textAlign: 'center' }}>
+          <div style={{ padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', borderRadius: '20px' }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 28 }}>🔒</span>
               <span style={{ color: "var(--color-danger)", fontWeight: 600 }}>
@@ -400,7 +399,6 @@ export default function UsersPage() {
             emptyMessage="No users found"
           />
         )}
-      </Card>
 
       {totalPages > 1 && (
         <div className={styles.pagination}>

@@ -8,9 +8,9 @@ import { useToast } from "@/lib/toast-context";
 import { COUNTRIES } from "@/lib/countries";
 import styles from "./page.module.css";
 
-// Unified Components
 import { Button } from "@/components/ui/Button/Button";
 import { Input } from "@/components/ui/Input/Input";
+import { Select } from "@/components/ui/Select/Select";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
 export default function SettingsPage() {
@@ -91,7 +91,7 @@ export default function SettingsPage() {
 
       <div className={styles.grid}>
         {/* Profile Configuration */}
-        <Card className={styles.section} padding="lg">
+        <Card padding="lg">
           <div className={styles.sectionHead}>
             <div className={styles.sectionIcon} style={{ background: "rgba(16, 185, 129, 0.12)", color: "#10b981" }}>
               <User size={18} />
@@ -103,54 +103,32 @@ export default function SettingsPage() {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-5)' }}>
-            <div className="form-group">
-              <label className="text-label text-text-primary mb-1 block" htmlFor="profile-name">Full Name</label>
-              <Input
-                id="profile-name"
-                type="text"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="Admin"
-              />
-            </div>
-            <div className="form-group">
-              <label className="text-label text-text-primary mb-1 block" htmlFor="profile-email">Email Address</label>
-              <Input
-                id="profile-email"
-                type="email"
-                value={profileEmail}
-                readOnly
-                disabled
-                placeholder="admin@example.com"
-              />
-            </div>
+            <Input
+              id="profile-name"
+              label="Full Name"
+              type="text"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder="Admin"
+            />
+            <Input
+              id="profile-email"
+              label="Email Address"
+              type="email"
+              value={profileEmail}
+              readOnly
+              disabled
+              placeholder="admin@example.com"
+            />
           
-            <div className="form-group">
-              <label className="text-label text-text-primary mb-1 block" htmlFor="profile-country">Country</label>
-              <select
-                id="profile-country"
-                value={profileCountry}
-                onChange={(e) => setProfileCountry(e.target.value)}
-                style={{ 
-                  cursor: "pointer",
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--text-base)',
-                  color: 'var(--text-primary)',
-                  background: 'var(--color-bg)',
-                  outline: 'none',
-                }}
-              >
-                <option value="">Select a country</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              id="profile-country"
+              label="Country"
+              value={profileCountry}
+              onChange={setProfileCountry}
+              placeholder="Select a country"
+              options={COUNTRIES.map(c => ({ label: c, value: c }))}
+            />
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--space-6)" }}>
@@ -168,7 +146,7 @@ export default function SettingsPage() {
 
         {/* Stripe Plan Customization */}
         {isFredAdmin && (
-        <Card className={styles.section} padding="lg">
+        <Card padding="lg">
           <div className={styles.sectionHead}>
             <div className={styles.sectionIcon} style={{ background: "rgba(99, 102, 241, 0.12)", color: "#6366f1" }}>
               <CreditCard size={18} />
@@ -180,100 +158,64 @@ export default function SettingsPage() {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-5)' }}>
-            <div className="form-group">
-              <label className="text-label text-text-primary mb-1 block" htmlFor="plan-name">Plan Name</label>
+            <Input
+              id="plan-name"
+              label="Plan Name"
+              type="text"
+              value={stripePlanName}
+              onChange={(e) => setStripePlanName(e.target.value)}
+              placeholder="e.g. Pro Plan"
+            />
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <Input
-                id="plan-name"
-                type="text"
-                value={stripePlanName}
-                onChange={(e) => setStripePlanName(e.target.value)}
-                placeholder="e.g. Pro Plan"
+                id="plan-price"
+                label="Price"
+                type="number"
+                value={stripePlanPrice}
+                onChange={(e) => setStripePlanPrice(e.target.value)}
+                placeholder="e.g. 49"
+              />
+              <Select
+                id="plan-currency"
+                label="Currency"
+                value={stripePlanCurrency}
+                onChange={setStripePlanCurrency}
+                options={[
+                  { label: "USD ($)", value: "USD" },
+                  { label: "EUR (€)", value: "EUR" },
+                  { label: "GBP (£)", value: "GBP" },
+                  { label: "INR (₹)", value: "INR" }
+                ]}
               />
             </div>
             
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              <div className="form-group">
-                <label className="text-label text-text-primary mb-1 block" htmlFor="plan-price">Price</label>
-                <Input
-                  id="plan-price"
-                  type="number"
-                  value={stripePlanPrice}
-                  onChange={(e) => setStripePlanPrice(e.target.value)}
-                  placeholder="e.g. 49"
-                />
-              </div>
-              <div className="form-group">
-                <label className="text-label text-text-primary mb-1 block" htmlFor="plan-currency">Currency</label>
-                <select
-                  id="plan-currency"
-                  value={stripePlanCurrency}
-                  onChange={(e) => setStripePlanCurrency(e.target.value)}
-                  style={{ 
-                    cursor: "pointer",
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: 'var(--text-base)',
-                    color: 'var(--text-primary)',
-                    background: 'var(--color-bg)',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="INR">INR (₹)</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label className="text-label text-text-primary mb-1 block" htmlFor="plan-company">Target Company</label>
-              <select
-                id="plan-company"
-                value={stripePlanCompanyId}
-                onChange={(e) => setStripePlanCompanyId(e.target.value)}
-                style={{ 
-                  cursor: "pointer",
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--text-base)',
-                  color: 'var(--text-primary)',
-                  background: 'var(--color-bg)',
-                  outline: 'none',
-                }}
-              >
-                <option value="" disabled>Select a company</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              id="plan-company"
+              label="Target Company"
+              value={stripePlanCompanyId}
+              onChange={setStripePlanCompanyId}
+              placeholder="Select a company"
+              options={companies.map(c => ({ label: c.name, value: c.id }))}
+            />
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              <div className="form-group">
-                <label className="text-label text-text-primary mb-1 block" htmlFor="plan-users">Max Users</label>
-                <Input
-                  id="plan-users"
-                  type="number"
-                  value={stripePlanUsers}
-                  onChange={(e) => setStripePlanUsers(e.target.value)}
-                  placeholder="e.g. 10"
-                />
-              </div>
-              <div className="form-group">
-                <label className="text-label text-text-primary mb-1 block" htmlFor="plan-storage">Max Storage (MB)</label>
-                <Input
-                  id="plan-storage"
-                  type="number"
-                  value={stripePlanStorage}
-                  onChange={(e) => setStripePlanStorage(e.target.value)}
-                  placeholder="e.g. 51200"
-                />
-              </div>
+              <Input
+                id="plan-users"
+                label="Max Users"
+                type="number"
+                value={stripePlanUsers}
+                onChange={(e) => setStripePlanUsers(e.target.value)}
+                placeholder="e.g. 10"
+              />
+              <Input
+                id="plan-storage"
+                label="Max Storage (MB)"
+                type="number"
+                value={stripePlanStorage}
+                onChange={(e) => setStripePlanStorage(e.target.value)}
+                placeholder="e.g. 51200"
+              />
             </div>
           </div>
 

@@ -1,10 +1,18 @@
 /* ── Table Component ── */
 .wrapper {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
   overflow: visible;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .wrapper {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.2);
 }
 
 .table {
@@ -14,8 +22,13 @@
 
 /* ── Head ── */
 .headRow {
-  background: var(--color-bg-subtle);
-  border-bottom: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .headRow {
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .headRow th:first-child {
@@ -27,11 +40,11 @@
 }
 
 .th {
-  padding: var(--space-3) var(--space-5);
+  padding: 12px 16px;
   text-align: left;
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.07em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-muted);
   white-space: nowrap;
@@ -39,8 +52,12 @@
 
 /* ── Body ── */
 .bodyRow {
-  border-bottom: 1px solid var(--color-border);
-  transition: background var(--transition);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] .bodyRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .bodyRow:last-child {
@@ -52,11 +69,20 @@
 }
 
 .bodyRow:last-child td:last-child {
-  border-bottom-right-radius: var(--radius-lg);
+  border-bottom-right-radius: 20px;
 }
 
 .bodyRow:hover {
-  background: var(--color-surface-hover);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .bodyRow:hover {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .clickable {
@@ -64,8 +90,8 @@
 }
 
 .td {
-  padding: var(--space-4) var(--space-5);
-  font-size: var(--text-base);
+  padding: 10px 16px;
+  font-size: 0.9rem;
   vertical-align: middle;
   color: var(--color-text-primary);
 }

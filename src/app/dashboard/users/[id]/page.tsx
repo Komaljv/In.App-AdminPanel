@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getUserAnalytics, impersonateUser } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import styles from "./page.module.css";
+import { Table, type Column } from "@/components/ui/Table/Table";
 
 interface AnalyticsData {
   profile: {
@@ -229,6 +230,28 @@ export default function UserAnalyticsPage() {
   const filteredDocs = (uploadedDocuments || []).filter((doc) =>
     doc.fileName.toLowerCase().includes(docSearch.toLowerCase())
   );
+
+  const loginHistoryColumns = React.useMemo<Column<any>[]>(() => [
+    {
+      key: "createdAt",
+      header: "Date & Time",
+      render: (log) => <span className={styles.dateCell}>{new Date(log.createdAt).toLocaleString()}</span>
+    },
+    {
+      key: "ipAddress",
+      header: "IP Address",
+      render: (log) => log.ipAddress || "—"
+    },
+    {
+      key: "userAgent",
+      header: "Device / Browser",
+      render: (log) => (
+        <span className={styles.listItemSub} title={log.userAgent || ""}>
+          {(log.userAgent && log.userAgent.length > 60) ? log.userAgent.substring(0, 60) + "..." : (log.userAgent || "—")}
+        </span>
+      )
+    }
+  ], []);
 
   return (
     <div className={styles.page}>
@@ -546,32 +569,11 @@ export default function UserAnalyticsPage() {
           <Clock size={18} />
           Recent Login History
         </h3>
-        {(!loginHistory || loginHistory.length === 0) ? (
-          <p className={styles.noData}>No recent logins recorded.</p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>IP Address</th>
-                <th>Device / Browser</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loginHistory.map((log) => (
-                <tr key={log.id}>
-                  <td className={styles.dateCell}>{new Date(log.createdAt).toLocaleString()}</td>
-                  <td>{log.ipAddress || "—"}</td>
-                  <td>
-                    <span className={styles.listItemSub} title={log.userAgent || ""}>
-                      {(log.userAgent && log.userAgent.length > 60) ? log.userAgent.substring(0, 60) + "..." : (log.userAgent || "—")}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <Table
+          columns={loginHistoryColumns}
+          data={loginHistory || []}
+          emptyMessage="No recent logins recorded."
+        />
       </div>
     </div>
   );

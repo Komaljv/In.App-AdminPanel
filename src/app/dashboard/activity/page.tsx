@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Search,  ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getAuditLogs, exportAuditLogs } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import styles from "./page.module.css";
+import { Table, type Column } from "@/components/ui/Table/Table";
+import { Button } from "@/components/ui/Button/Button";
+import { Input } from "@/components/ui/Input/Input";
+import { Badge } from "@/components/ui/Badge/Badge";
 
 interface AuditLog {
   id: string;
@@ -84,6 +88,57 @@ export default function ActivityPage() {
     return actionMatch || detailMatch || nameMatch || emailMatch;
   });
 
+  const columns = useMemo<Column<AuditLog>[]>(() => [
+    {
+      key: "createdAt",
+      header: "Timestamp",
+      render: (log) => (
+        <span className={styles.dateCell}>
+          {new Date(log.createdAt).toLocaleString()}
+        </span>
+      )
+    },
+    {
+      key: "user",
+      header: "User",
+      render: (log) => log.user ? (
+        <div className={styles.userInfo}>
+          <span className={styles.userName}>{log.user.name}</span>
+          <span className={styles.userEmail}>{log.user.email}</span>
+        </div>
+      ) : (
+        <span className={styles.systemUser}>System</span>
+      )
+    },
+    {
+      key: "action",
+      header: "Action",
+      render: (log) => {
+        const variant = log.action.includes('DELETE') ? 'danger' : log.action.includes('CREATE') || log.action.includes('UPLOAD') ? 'success' : 'info';
+        return <Badge variant={variant as any}>{log.action}</Badge>;
+      }
+    },
+    {
+      key: "details",
+      header: "Details",
+      render: (log) => <span className={styles.detailsCell}>{log.details || "—"}</span>
+    },
+    {
+      key: "deviceInfo",
+      header: "IP / Device",
+      render: (log) => (
+        <div className={styles.deviceInfo}>
+          <span className={styles.ipAddress}>{log.ipAddress || "—"}</span>
+          {log.userAgent && (
+            <span className={styles.userAgent} title={log.userAgent}>
+              {log.userAgent.length > 20 ? log.userAgent.substring(0, 20) + "..." : log.userAgent}
+            </span>
+          )}
+        </div>
+      )
+    }
+  ], []);
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -91,116 +146,60 @@ export default function ActivityPage() {
           <h1 className={styles.title}>Activity Logs</h1>
           <p className={styles.subtitle}>System-wide chronological audit trail</p>
         </div>
-        <button
-          className="btn btn-outline"
+        <Button
+          variant="outline"
           onClick={handleExport}
           disabled={exporting}
+          leftIcon={<Download size={16} />}
+          loading={exporting}
         >
-          {exporting ? <span className="spinner" /> : <Download size={16} />}
           Export CSV
-        </button>
+        </Button>
       </div>
 
       <div className={styles.toolbar}>
         <div className={styles.searchWrapper}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
+          <Input
             type="text"
-            className={`form-input ${styles.searchInput}`}
+            leftIcon={<Search size={15} />}
             placeholder="Search action, detail, user..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <span className={styles.countBadge}>
+        <Badge variant="neutral">
           {total} events total
-        </span>
+        </Badge>
       </div>
 
-      <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>User</th>
-              <th>Action</th>
-              <th>Details</th>
-              <th>IP / Device</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  <span className="spinner" /> Loading activity logs...
-                </td>
-              </tr>
-            ) : filteredLogs.length === 0 ? (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  {search ? "No logs match your search" : "No activity logs recorded yet"}
-                </td>
-              </tr>
-            ) : (
-              filteredLogs.map((log) => (
-                <tr key={log.id} className={styles.tableRow}>
-                  <td className={styles.dateCell}>
-                    {new Date(log.createdAt).toLocaleString()}
-                  </td>
-                  <td>
-                    {log.user ? (
-                      <div className={styles.userInfo}>
-                        <span className={styles.userName}>{log.user.name}</span>
-                        <span className={styles.userEmail}>{log.user.email}</span>
-                      </div>
-                    ) : (
-                      <span className={styles.systemUser}>System</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`badge ${log.action.includes('DELETE') ? 'badge-danger' : log.action.includes('CREATE') || log.action.includes('UPLOAD') ? 'badge-success' : 'badge-info'}`}>
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className={styles.detailsCell}>
-                    {log.details || "—"}
-                  </td>
-                  <td>
-                    <div className={styles.deviceInfo}>
-                      <span className={styles.ipAddress}>{log.ipAddress || "—"}</span>
-                      {log.userAgent && (
-                        <span className={styles.userAgent} title={log.userAgent}>
-                          {log.userAgent.length > 20 ? log.userAgent.substring(0, 20) + "..." : log.userAgent}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table
+        columns={columns}
+        data={filteredLogs}
+        loading={loading}
+        emptyMessage={search ? "No logs match your search" : "No activity logs recorded yet"}
+      />
 
       {totalPages > 1 && (
         <div className={styles.pagination}>
-          <button
-            className="btn btn-ghost"
+          <Button
+            variant="ghost"
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
+            leftIcon={<ChevronLeft size={16} />}
           >
-            <ChevronLeft size={16} /> Previous
-          </button>
+            Previous
+          </Button>
           <span className={styles.pageInfo}>
             Page {page} of {totalPages}
           </span>
-          <button
-            className="btn btn-ghost"
+          <Button
+            variant="ghost"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
+            rightIcon={<ChevronRight size={16} />}
           >
-            Next <ChevronRight size={16} />
-          </button>
+            Next
+          </Button>
         </div>
       )}
     </div>

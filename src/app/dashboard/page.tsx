@@ -125,7 +125,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Category Summaries */}
-      <div className={styles.section} style={{ marginTop: "2rem" }}>
+      <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Category Summaries</h2>
         </div>
@@ -139,22 +139,16 @@ export default function DashboardPage() {
               <div 
                 key={cat.id} 
                 className={styles.statCard} 
-                style={{ padding: "1rem", cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s" }}
+                style={{ cursor: "pointer" }}
                 onClick={() => router.push(`/dashboard/documents?categoryId=${cat.id}`)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "var(--shadow-md)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "none";
-                  e.currentTarget.style.boxShadow = "var(--shadow-sm)";
-                }}
               >
-                <h3 className={styles.statLabel} style={{ fontWeight: 600, color: "#111827" }}>
-                  {cat.name}
-                </h3>
-                <p className={styles.statValue} style={{ fontSize: "1.5rem" }}>
-                  {cat.documentCount} <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>documents</span>
+                <div className={styles.statTop}>
+                  <h3 className={styles.statLabel} style={{ fontWeight: 700, color: "inherit" }}>
+                    {cat.name}
+                  </h3>
+                </div>
+                <p className={styles.statValue}>
+                  {cat.documentCount} <span style={{ fontSize: "1rem", color: "var(--color-text-secondary)", fontWeight: 500, marginLeft: "4px" }}>documents</span>
                 </p>
               </div>
             ))

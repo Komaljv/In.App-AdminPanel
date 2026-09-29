@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Trash2, UserX, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/Button/Button";
 import styles from "./confirm-dialog.module.css";
 
 interface ConfirmDialogProps {
@@ -46,20 +47,22 @@ export default function ConfirmDialog({
         <h2 className={styles.title}>{title}</h2>
         <p className={styles.message}>{message}</p>
         <div className={styles.actions}>
-          <button
-            className="btn btn-ghost"
+          <Button
+            variant="outline"
             onClick={onCancel}
             id="confirm-dialog-cancel"
+            fullWidth
           >
             Cancel
-          </button>
-          <button
-            className={`btn ${variant === "danger" ? "btn-danger" : "btn-warning"}`}
+          </Button>
+          <Button
+            variant={variant === "danger" ? "danger" : "warning"}
             onClick={onConfirm}
             id="confirm-dialog-confirm"
+            fullWidth
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

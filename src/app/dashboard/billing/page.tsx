@@ -387,17 +387,7 @@ export default function BillingPage() {
                   variant={isActive ? "outline" : "primary"}
                   onClick={() => handleSubscribe(plan.stripePriceId)}
                   disabled={isSubscribed || !plan.stripePriceId || subscribingTo !== null}
-                  style={{ 
-                    width: '100%', 
-                    borderRadius: '24px', 
-                    background: isActive ? 'transparent' : '#c4b5fd', 
-                    color: isActive ? '#9ca3af' : '#fff',
-                    border: isActive ? '1px solid #e5e7eb' : 'none',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: '0.85rem',
-                    boxShadow: isActive ? 'none' : '0 4px 14px 0 rgba(196, 181, 253, 0.6)'
-                  }}
+                  fullWidth
                 >
                   {subscribingTo === plan.stripePriceId ? (
                     <Loader2 className={styles.btnSpinner} size={18} />
@@ -443,13 +433,11 @@ export default function BillingPage() {
               ))}
             </div>
           </div>
-          <Card padding="none">
-            <Table
-              columns={adminColumns}
-              data={filteredCompanies}
-              emptyMessage="No companies found."
-            />
-          </Card>
+          <Table
+            columns={adminColumns}
+            data={filteredCompanies}
+            emptyMessage="No companies found."
+          />
         </div>
       )}
     </div>

@@ -278,14 +278,12 @@ export default function DepartmentsPage() {
       </div>
 
       {/* Table */}
-      <Card padding="none">
-        <Table
-          columns={columns}
-          data={filtered}
-          loading={loading}
-          emptyMessage={search ? "No departments match your search" : "No departments yet. Create one above."}
-        />
-      </Card>
+      <Table
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyMessage={search ? "No departments match your search" : "No departments yet. Create one above."}
+      />
 
       <ConfirmDialog
         isOpen={confirmOpen}

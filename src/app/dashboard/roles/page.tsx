@@ -16,7 +16,7 @@ import {
   type Category
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
-import styles from "../companies/page.module.css"; // Reuse companies styles
+import styles from "../users/page.module.css";
 
 // Unified Components
 import { Button } from "@/components/ui/Button/Button";
@@ -25,14 +25,13 @@ import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
-const AVAILABLE_PERMISSIONS = [
-  "CREATE_ROLE", "READ_ROLE", "UPDATE_ROLE", "DELETE_ROLE",
-  "CREATE_DOCUMENT", "READ_DOCUMENT", "UPDATE_DOCUMENT", "DELETE_DOCUMENT",
-  "CREATE_CATEGORY", "READ_CATEGORY", "UPDATE_CATEGORY", "DELETE_CATEGORY",
-  "CREATE_USER", "READ_USER", "UPDATE_USER", "DELETE_USER",
-  "TEST_NOTIFICATION",
-  "CREATE_FOLDER", "READ_FOLDER", "UPDATE_FOLDER", "DELETE_FOLDER",
-  "CREATE_PUBLIC_SHARE",
+const PERMISSION_GROUPS = [
+  { name: "Role Management", perms: ["CREATE_ROLE", "READ_ROLE", "UPDATE_ROLE", "DELETE_ROLE"] },
+  { name: "Document Management", perms: ["CREATE_DOCUMENT", "READ_DOCUMENT", "UPDATE_DOCUMENT", "DELETE_DOCUMENT"] },
+  { name: "Category Management", perms: ["CREATE_CATEGORY", "READ_CATEGORY", "UPDATE_CATEGORY", "DELETE_CATEGORY"] },
+  { name: "User Management", perms: ["CREATE_USER", "READ_USER", "UPDATE_USER", "DELETE_USER"] },
+  { name: "Folder Management", perms: ["CREATE_FOLDER", "READ_FOLDER", "UPDATE_FOLDER", "DELETE_FOLDER"] },
+  { name: "Other Actions", perms: ["TEST_NOTIFICATION", "CREATE_PUBLIC_SHARE"] },
 ];
 
 interface RoleForm {
@@ -174,9 +173,11 @@ export default function RolesPage() {
       key: "name",
       header: "Role Name",
       render: (role) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Shield size={14} style={{ color: 'var(--color-primary)' }} />
-          <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{role.name}</span>
+        <div className={styles.userCell}>
+          <div className={styles.userAvatar}>
+            <Shield size={16} />
+          </div>
+          <span className={styles.userName}>{role.name}</span>
         </div>
       )
     },
@@ -238,32 +239,34 @@ export default function RolesPage() {
   ], []);
 
   return (
-    <div className={styles.page} style={{ padding: 'var(--space-8) 36px', animation: 'fadeIn 0.3s ease' }}>
+    <div className={styles.page}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
+      <div className={styles.header}>
         <div>
-          <h1 className="text-page-title text-text-primary">Roles & Permissions</h1>
-          <p className="text-text-secondary text-sm" style={{ marginTop: 'var(--space-1)' }}>
+          <h1 className={styles.title}>Roles & Permissions</h1>
+          <p className={styles.subtitle}>
             Manage custom roles and access control
           </p>
         </div>
-        <Button
-          variant="primary"
-          leftIcon={<Plus size={16} />}
-          onClick={() => {
-            setEditingId(null);
-            setFormState(EMPTY_FORM);
-            setShowForm(true);
-          }}
-          id="create-role-btn"
-        >
-          New Role
-        </Button>
+        {!showForm && (
+          <Button
+            variant="primary"
+            leftIcon={<Plus size={16} />}
+            onClick={() => {
+              setEditingId(null);
+              setFormState(EMPTY_FORM);
+              setShowForm(true);
+            }}
+            id="create-role-btn"
+          >
+            New Role
+          </Button>
+        )}
       </div>
 
       {/* Create/Edit Form */}
       {showForm && (
-        <Card className="mb-6" style={{ marginBottom: 'var(--space-6)', maxWidth: '800px' }}>
+        <Card className="mb-6" style={{ marginBottom: 'var(--space-6)' }}>
           <CardHeader
             title={editingId ? "Edit Role" : "New Role"}
             action={
@@ -273,7 +276,7 @@ export default function RolesPage() {
             }
           />
           <CardBody>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="role-name">
                   Role Name <span style={{ color: 'var(--color-danger)' }}>*</span>
@@ -292,16 +295,30 @@ export default function RolesPage() {
                 <label className="form-label">
                   Permissions
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                  {AVAILABLE_PERMISSIONS.map(perm => (
-                    <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
-                      <input
-                        type="checkbox"
-                        checked={formState.permissions.includes(perm)}
-                        onChange={() => togglePermission(perm)}
-                      />
-                      {perm.replace(/_/g, ' ')}
-                    </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginTop: '12px' }}>
+                  {PERMISSION_GROUPS.map(group => (
+                    <div key={group.name} style={{ background: 'rgba(255,255,255,0.4)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {group.name}
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {group.perms.map(perm => (
+                          <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <div className={styles.switch} style={{ transform: 'scale(0.85)', transformOrigin: 'left center', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={formState.permissions.includes(perm)}
+                                onChange={() => togglePermission(perm)}
+                              />
+                              <span className={styles.slider}></span>
+                            </div>
+                            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                              {perm.replace(/_/g, ' ')}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -313,19 +330,23 @@ export default function RolesPage() {
                 <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
                   Select the specific categories users with this role are allowed to access. If left empty, they will not be granted access to any extra categories.
                 </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '12px' }}>
                   {categories.map(cat => (
-                    <label key={cat.id} htmlFor={`cat-${cat.id}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', padding: '6px 12px', background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                      <input
-                        id={`cat-${cat.id}`}
-                        type="checkbox"
-                        checked={formState.restrictedCategories.includes(cat.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleCategory(cat.id);
-                        }}
-                      />
-                      {cat.name}
+                    <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '12px', background: 'rgba(255,255,255,0.4)', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                      <div className={styles.switch} style={{ transform: 'scale(0.85)', transformOrigin: 'left center', margin: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={formState.restrictedCategories.includes(cat.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleCategory(cat.id);
+                          }}
+                        />
+                        <span className={styles.slider}></span>
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                        {cat.name}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -353,32 +374,34 @@ export default function RolesPage() {
         </Card>
       )}
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '360px' }}>
-          <Input
-            id="roles-search"
-            type="text"
-            leftIcon={<Search size={15} />}
-            placeholder="Search roles…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <Badge variant="neutral">
-          {filtered.length} {filtered.length === 1 ? "role" : "roles"}
-        </Badge>
-      </div>
+      {!showForm && (
+        <>
+          {/* Toolbar */}
+          <div className={styles.toolbar}>
+            <div className={styles.searchWrapper}>
+              <Input
+                id="roles-search"
+                type="text"
+                leftIcon={<Search size={15} />}
+                placeholder="Search roles…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Badge variant="neutral">
+              {filtered.length} {filtered.length === 1 ? "role" : "roles"}
+            </Badge>
+          </div>
 
-      {/* Table */}
-      <Card padding="none">
-        <Table
-          columns={columns}
-          data={filtered}
-          loading={loading}
-          emptyMessage={search ? "No roles match your search" : "No roles yet."}
-        />
-      </Card>
+          {/* Table */}
+          <Table
+            columns={columns}
+            data={filtered}
+            loading={loading}
+            emptyMessage={search ? "No roles match your search" : "No roles yet."}
+          />
+        </>
+      )}
 
       <ConfirmDialog
         isOpen={confirmOpen}
