@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/Button/Button";
 import { Input } from "@/components/ui/Input/Input";
 import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
-import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
+import { Card } from "@/components/ui/Card/Card";
 
 interface DocumentItem {
   id: string;

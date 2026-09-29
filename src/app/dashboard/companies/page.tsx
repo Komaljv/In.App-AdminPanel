@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Plus, Search, Pencil, Trash2, Building2, X, Check,
-  ChevronLeft, ChevronRight, FileText, Hash, Mail
+  Plus, Search,  Building2, X, Check,
+  ChevronLeft, ChevronRight, 
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
@@ -12,7 +12,6 @@ import {
   createCompany,
   updateCompany,
   deleteCompany,
-  createCustomPlan,
   type Company,
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Search, X, Check,
-  FileText, Briefcase, Edit2, Trash2
+   Briefcase, Edit2, Trash2
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";

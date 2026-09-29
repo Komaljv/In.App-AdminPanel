@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Check, X, CreditCard, Zap, Loader2, Building2 } from "lucide-react";
+import { Check, CreditCard, Zap, Loader2, Building2, Search } from "lucide-react";
 import { apiCall, getCompanies, getCompany } from "@/lib/api";
 import { Company } from "@/types";
 import { useAuth } from "@/lib/auth-context";
@@ -12,9 +12,10 @@ import { useRouter } from "next/navigation";
 
 // Unified Components
 import { Button } from "@/components/ui/Button/Button";
+import { Input } from "@/components/ui/Input/Input";
 import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
-import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
+import { Card } from "@/components/ui/Card/Card";
 
 interface Plan {
   id: string;
@@ -62,33 +63,35 @@ function UsageCell({ usage }: { usage?: Company['usage'] }) {
   const storagePercentage = usage?.storage?.percentage ?? 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', width: '100%' }}>
       {/* Users Progress */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#4b5563', fontWeight: 500 }}>
           <span>Users</span>
           <span>{usersUsed} / {usersMax === 0 ? '∞' : usersMax}</span>
         </div>
-        <div style={{ height: '6px', backgroundColor: 'var(--color-bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{ height: '4px', backgroundColor: '#f3f4f6', borderRadius: '4px', overflow: 'hidden' }}>
           <div style={{ 
             height: '100%', 
-            backgroundColor: usersPercentage > 90 ? 'var(--color-danger)' : usersPercentage > 75 ? 'var(--color-warning)' : 'var(--color-primary)', 
-            width: `${Math.min(usersPercentage, 100)}%` 
+            backgroundColor: '#7c3aed', 
+            width: `${Math.min(usersPercentage, 100)}%`,
+            borderRadius: '4px'
           }} />
         </div>
       </div>
 
       {/* Storage Progress */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#4b5563', fontWeight: 500 }}>
           <span>Storage</span>
           <span>{formatBytes(storageUsed)} / {storageMax === 0 ? '∞' : formatBytes(storageMax)}</span>
         </div>
-        <div style={{ height: '6px', backgroundColor: 'var(--color-bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{ height: '4px', backgroundColor: '#f3f4f6', borderRadius: '4px', overflow: 'hidden' }}>
           <div style={{ 
             height: '100%', 
-            backgroundColor: storagePercentage > 90 ? 'var(--color-danger)' : storagePercentage > 75 ? 'var(--color-warning)' : 'var(--color-success)', 
-            width: `${Math.min(storagePercentage, 100)}%` 
+            backgroundColor: '#7c3aed', 
+            width: `${Math.min(storagePercentage, 100)}%`,
+            borderRadius: '4px'
           }} />
         </div>
       </div>
@@ -103,6 +106,25 @@ export default function BillingPage() {
   const [myCompany, setMyCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribingTo, setSubscribingTo] = useState<string | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const filteredCompanies = useMemo(() => {
+    return companies.filter((c) => {
+      const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
+      
+      let status = "inactive";
+      if (c.subscriptionStatus === "active" || c.subscriptionStatus === "trialing") {
+        status = "active";
+      }
+
+      const matchStatus = statusFilter === "all" || status === statusFilter;
+      
+      return matchSearch && matchStatus;
+    });
+  }, [companies, search, statusFilter]);
+
   const { showToast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
@@ -220,19 +242,20 @@ export default function BillingPage() {
       render: (c) => c.subscriptionStatus ? (
         <Badge variant={c.subscriptionStatus === 'active' ? 'success' : 'warning'}>
           {c.subscriptionStatus.toUpperCase()}
+         
         </Badge>
       ) : <span style={{ color: 'var(--text-muted)' }}>—</span>
     },
-    {
-      key: "limits",
-      header: "Limits",
-      render: (c) => c.subscriptionPlan ? (
-        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          <div>Users: {c.subscriptionPlan.maxUsers ?? 'Unlimited'}</div>
-          <div>Storage: {c.subscriptionPlan.maxStorage ? `${Math.round(Number(c.subscriptionPlan.maxStorage) / (1024*1024*1024))}GB` : 'Unlimited'}</div>
-        </div>
-      ) : <span style={{ color: 'var(--text-muted)' }}>—</span>
-    },
+    // {
+    //   key: "limits",
+    //   header: "Limits",
+    //   render: (c) => c.subscriptionPlan ? (
+    //     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+    //       <div>Users: {c.subscriptionPlan.maxUsers ?? 'Unlimited'}</div>
+    //       <div>Storage: {c.subscriptionPlan.maxStorage ? `${Math.round(Number(c.subscriptionPlan.maxStorage) / (1024*1024*1024))}GB` : 'Unlimited'}</div>
+    //     </div>
+    //   ) : <span style={{ color: 'var(--text-muted)' }}>—</span>
+    // },
     {
       key: "usage",
       header: "Usage",
@@ -257,8 +280,8 @@ export default function BillingPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className="text-page-title text-text-primary">Billing & Subscriptions</h1>
-          <p className="text-text-secondary text-sm" style={{ marginTop: 'var(--space-1)' }}>Manage your plan and billing details.</p>
+          <h1 className={styles.title}>Billing & Subscriptions</h1>
+          <p className={styles.subtitle}>Manage your plan and billing details.</p>
         </div>
          
         {status?.stripeCustomerId && status.stripeCustomerId !== '[null]' && (
@@ -312,14 +335,12 @@ export default function BillingPage() {
         };
         
         return (
-          <Card className="mb-8" style={{ marginBottom: '2rem' }}>
-            <CardHeader title="Current Plan Usage" />
-            <CardBody>
-              <div style={{ maxWidth: '400px' }}>
-                <UsageCell usage={calculatedUsage} />
-              </div>
-            </CardBody>
-          </Card>
+          <div style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', background: '#fff', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', color: '#111827' }}>Current Plan Usage</h3>
+            <div style={{ width: '100%' }}>
+              <UsageCell usage={calculatedUsage} />
+            </div>
+          </div>
         );
       })()}
 
@@ -366,16 +387,26 @@ export default function BillingPage() {
                   variant={isActive ? "outline" : "primary"}
                   onClick={() => handleSubscribe(plan.stripePriceId)}
                   disabled={isSubscribed || !plan.stripePriceId || subscribingTo !== null}
-                  style={{ width: '100%' }}
+                  style={{ 
+                    width: '100%', 
+                    borderRadius: '24px', 
+                    background: isActive ? 'transparent' : '#c4b5fd', 
+                    color: isActive ? '#9ca3af' : '#fff',
+                    border: isActive ? '1px solid #e5e7eb' : 'none',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    fontSize: '0.85rem',
+                    boxShadow: isActive ? 'none' : '0 4px 14px 0 rgba(196, 181, 253, 0.6)'
+                  }}
                 >
                   {subscribingTo === plan.stripePriceId ? (
                     <Loader2 className={styles.btnSpinner} size={18} />
                   ) : isActive ? (
                     "Subscribed"
                   ) : (
-                    <>
-                      <Zap size={16} /> Subscribe Now
-                    </>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Zap size={14} fill="currentColor" style={{ marginRight: '6px' }} /> SUBSCRIBE NOW
+                    </div>
                   )}
                 </Button>
               </div>
@@ -387,11 +418,35 @@ export default function BillingPage() {
 
       {isSystemAdmin(user) && (
         <div style={{ marginTop: '2rem' }}>
-          <h2 className="text-section-heading mb-4">All Companies Billing Overview</h2>
+          <div className={styles.toolbar}>
+            <div className={styles.searchWrapper}>
+              <Input
+                id="companies-search"
+                type="text"
+                leftIcon={<Search size={15} />}
+                placeholder="Search by company name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.filters}>
+              {["all", "active", "inactive"].map((s) => (
+                <Button
+                  key={s}
+                  variant={statusFilter === s ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter(s)}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
           <Card padding="none">
             <Table
               columns={adminColumns}
-              data={companies}
+              data={filteredCompanies}
               emptyMessage="No companies found."
             />
           </Card>

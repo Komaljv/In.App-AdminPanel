@@ -327,6 +327,11 @@
   color: rgba(255, 255, 255, 0.3);
 }
 
+.fieldInput option {
+  background: #1B1480;
+  color: #FFFFFF;
+}
+
 .fieldGroup.readOnly {
   opacity: 0.6;
   background: rgba(255, 255, 255, 0.01);

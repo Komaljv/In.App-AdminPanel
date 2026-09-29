@@ -16,7 +16,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("admin@1234");
   const [showPwd, setShowPwd] = useState(false);
-  const [remember, setRemember] = useState(true);
 
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

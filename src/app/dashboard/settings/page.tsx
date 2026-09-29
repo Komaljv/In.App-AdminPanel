@@ -61,8 +61,7 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const isFredAdmin = user?.role?.toUpperCase() === 'SYSTEMADMIN';
-
+  const isFredAdmin = user?.role === 'MASTER';
   const handleSaveProfile = async () => {
     if (!user?.token) return;
     setIsSavingProfile(true);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Clock, ChevronLeft, ChevronRight, Filter, Download } from "lucide-react";
+import { Search,  ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getAuditLogs, exportAuditLogs } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";

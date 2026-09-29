@@ -62,7 +62,7 @@ export default function Sidebar() {
       {user && (
         <div className={styles.companyBadge}>
           <Building2 size={14} />
-          <span>My Organization</span>
+          <span>{user?.company?.name || "My Organization"}</span>
         </div>
       )}
 

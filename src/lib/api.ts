@@ -654,6 +654,25 @@ export async function createCompany(
   return call<Company>('/api/company', { method: 'POST', body: JSON.stringify(data) }, authToken);
 }
 
+/** POST /api/company/complete */
+export async function completeCompanyRegistration(
+  token: string,
+  password: string,
+  extra: {
+    name?: string;
+    email?: string;
+    phoneNumber?: string;
+    country?: string;
+    companyName?: string;
+    fiscalCode?: string;
+  }
+): Promise<ApiResponse> {
+  return call('/api/company/complete', {
+    method: 'POST',
+    body: JSON.stringify({ token, password, ...extra }),
+  });
+}
+
 /** PUT /api/company/:id */
 export async function updateCompany(
   id: string,

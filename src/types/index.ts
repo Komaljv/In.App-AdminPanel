@@ -32,6 +32,10 @@ export interface AuthUser {
   role: string;
   roleId: string;
   token: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface LoginCredentials {

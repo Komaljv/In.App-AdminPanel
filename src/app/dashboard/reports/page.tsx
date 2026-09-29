@@ -66,7 +66,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className={styles.page} style={{ padding: 'var(--space-8) 40px', maxWidth: 1400, margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
+    <div className={styles.page} style={{ padding: 'var(--space-8) 40px',  margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <h1 className="text-page-title text-text-primary">Financial Reports</h1>
         <p className="text-text-secondary text-sm" style={{ marginTop: 'var(--space-1)' }}>AI-generated summary of your business performance.</p>
@@ -97,14 +97,17 @@ export default function ReportsPage() {
             value={currency} 
             onChange={(e) => setCurrency(e.target.value)}
             style={{
-              padding: '8px 12px',
+              background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: 'var(--text-sm)',
-              color: 'var(--text-primary)',
-              background: 'var(--color-bg)',
+              borderRadius: 'var(--radius-sm)',
+              padding: 'var(--space-3) var(--space-4)',
+              fontSize: 'var(--text-base)',
+              fontFamily: 'var(--font-sans)',
+              color: 'var(--color-text-primary)',
               outline: 'none',
-              minWidth: '120px'
+              boxShadow: 'var(--shadow-xs)',
+              minWidth: '120px',
+              appearance: 'auto'
             }}
           >
             <option value="USD">USD ($)</option>

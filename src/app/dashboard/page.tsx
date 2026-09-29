@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, UserPlus, CheckCircle, Clock, TrendingUp, Building2 } from "lucide-react";
+import { Users,  CheckCircle,  TrendingUp, Building2 } from "lucide-react";
 import styles from "./page.module.css";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -92,7 +91,7 @@ export default function DashboardPage() {
         <div>
           <h1 className={styles.title}>Dashboard</h1>
           <p className={styles.subtitle}>
-            Welcome back, <strong>{user?.name ?? user?.email}</strong>!
+            Welcome back, <strong>{user?.company?.name || user?.name || user?.email}</strong>!
           </p>
         </div>
   

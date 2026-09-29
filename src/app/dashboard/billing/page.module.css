@@ -1,13 +1,20 @@
 .container {
   padding: 2rem;
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
   animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .header {
@@ -31,12 +38,15 @@
   gap: 1rem;
 }
 
-.spinner, .btnSpinner {
+.spinner,
+.btnSpinner {
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  100% { transform: rotate(360deg); }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 
@@ -50,10 +60,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 3rem;
   background-color: white;
   border: 1px solid var(--border-color, #e5e7eb);
+  overflow: hidden;
 }
 
 .statusActive {
@@ -105,7 +116,8 @@
 
 .plansGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 340px));
+  justify-content: center;
   gap: 2rem;
   align-items: stretch;
 }
@@ -128,8 +140,8 @@
 }
 
 .activeCard {
-  border: 2px solid var(--primary-color, #4f46e5);
-  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.15), 0 10px 10px -5px rgba(79, 70, 229, 0.05);
+  border: 2px solid #7c3aed;
+  box-shadow: 0 20px 25px -5px rgba(124, 58, 237, 0.15), 0 10px 10px -5px rgba(124, 58, 237, 0.05);
 }
 
 .activeBadge {
@@ -137,13 +149,13 @@
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--primary-color, #4f46e5);
+  background: #7c3aed;
   color: white;
   padding: 0.25rem 1rem;
   border-radius: var(--radius-pill);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
-  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
 }
 
 .planHeader {
@@ -174,7 +186,7 @@
 }
 
 .amount {
-  font-size: var(--text-3xl);
+  font-size: 3rem;
   font-weight: var(--font-weight-bold);
   color: var(--text-primary, #111827);
   line-height: var(--leading-none);
@@ -190,7 +202,8 @@
 
 .planFeatures {
   flex-grow: 1;
-  margin-bottom: 2.5rem;
+
+  margin-bottom: 3.5rem;
 }
 
 .feature {
@@ -221,3 +234,39 @@
 
 
 
+.title {
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

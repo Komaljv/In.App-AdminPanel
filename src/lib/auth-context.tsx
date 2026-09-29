@@ -7,11 +7,16 @@ export interface AuthUser {
   companyId: string;
   name: string;
   email: string;
-  role: string;
+  role: string,
+
   roleId: string;
   token: string; // access token
   refreshToken?: string; // optional refresh token
   canShareDocuments?: boolean;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface AuthContextType {

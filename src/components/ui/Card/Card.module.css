@@ -4,16 +4,29 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  overflow: visible;
 }
 
-.elevated { box-shadow: var(--shadow-md); }
+.elevated {
+  box-shadow: var(--shadow-md);
+}
 
 /* Padding variants */
-.pad-none  { padding: 0; }
-.pad-sm    { padding: var(--space-4); }
-.pad-md    { padding: var(--space-6); }
-.pad-lg    { padding: var(--space-8); }
+.pad-none {
+  padding: 0;
+}
+
+.pad-sm {
+  padding: var(--space-4);
+}
+
+.pad-md {
+  padding: var(--space-6);
+}
+
+.pad-lg {
+  padding: var(--space-8);
+}
 
 /* Card header */
 .header {
@@ -25,7 +38,10 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.headerText { flex: 1; min-width: 0; }
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
 
 .title {
   font-size: var(--text-lg);
@@ -40,10 +56,14 @@
   margin-top: var(--space-1);
 }
 
-.action { flex-shrink: 0; }
+.action {
+  flex-shrink: 0;
+}
 
 /* Card body */
-.body { padding: var(--space-6); }
+.body {
+  padding: var(--space-6);
+}
 
 /* Card footer */
 .footer {

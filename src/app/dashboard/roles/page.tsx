@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Search, Pencil, Trash2, Shield, X, Check,
-  FileText, ShieldCheck, Tag
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";

@@ -1,7 +1,7 @@
 /* ── Reports Page ── */
 .page {
   padding: 32px 40px;
-  max-width: 1400px;
+  /* max-width: 1400px; */
   margin: 0 auto;
   animation: fadeIn 0.4s ease-out;
 }
@@ -118,7 +118,7 @@
   justify-content: center;
   color: var(--card-color);
   background: var(--icon-bg);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .statValue {
@@ -216,12 +216,21 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -234,21 +243,21 @@
   .statCard:nth-child(n) {
     grid-column: span 12;
   }
-  
+
   .page {
     padding: 20px;
   }
-  
+
   .filters {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .btn {
     margin-left: 0;
     justify-content: center;
   }
-  
+
   .vatBreakdown {
     grid-template-columns: 1fr;
   }

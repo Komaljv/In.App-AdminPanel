@@ -3,7 +3,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-sm);
 }
 
@@ -16,6 +16,14 @@
 .headRow {
   background: var(--color-bg-subtle);
   border-bottom: 1px solid var(--color-border);
+}
+
+.headRow th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+.headRow th:last-child {
+  border-top-right-radius: var(--radius-lg);
 }
 
 .th {
@@ -35,10 +43,25 @@
   transition: background var(--transition);
 }
 
-.bodyRow:last-child { border-bottom: none; }
-.bodyRow:hover { background: var(--color-surface-hover); }
+.bodyRow:last-child {
+  border-bottom: none;
+}
 
-.clickable { cursor: pointer; }
+.bodyRow:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+.bodyRow:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.bodyRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.clickable {
+  cursor: pointer;
+}
 
 .td {
   padding: var(--space-4) var(--space-5);
@@ -48,11 +71,19 @@
 }
 
 /* ── Alignment ── */
-.align-center { text-align: center; }
-.align-right  { text-align: right; }
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
 
 /* ── Empty State ── */
-.emptyCell { padding: 0 !important; border: none !important; }
+.emptyCell {
+  padding: 0 !important;
+  border: none !important;
+}
 
 .emptyState {
   display: flex;
@@ -74,21 +105,28 @@
 }
 
 /* ── Skeleton ── */
-.skeletonRow td { padding: var(--space-4) var(--space-5); }
+.skeletonRow td {
+  padding: var(--space-4) var(--space-5);
+}
 
 .skeleton {
   display: inline-block;
   height: 14px;
   background: linear-gradient(90deg,
-    var(--color-bg-subtle) 25%,
-    var(--color-border) 50%,
-    var(--color-bg-subtle) 75%);
+      var(--color-bg-subtle) 25%,
+      var(--color-border) 50%,
+      var(--color-bg-subtle) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite linear;
   border-radius: var(--radius-xs);
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }

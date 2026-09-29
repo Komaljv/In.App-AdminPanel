@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { FileText, FolderArchive, Download, Lock, FileImage, FileCode, FileType, FileSpreadsheet, FileArchive, FileVideo, FileAudio, File } from 'lucide-react';
+import { FileText, FolderArchive, Download, Lock, FileImage, FileCode,  FileSpreadsheet, FileArchive, FileVideo, FileAudio, File } from 'lucide-react';
 import styles from './SharePage.module.css';
 
 export default function SharedLinkPage() {

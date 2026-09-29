@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Lock, Eye, EyeOff, } from "lucide-react";
 import { resetPassword } from "@/lib/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";

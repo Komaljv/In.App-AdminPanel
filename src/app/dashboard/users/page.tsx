@@ -10,7 +10,7 @@ import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import { useAuth } from "@/lib/auth-context";
 import { getAdminUsers, deleteUser, deactivateUser, activateUser, getCompanies, updateUser, type User, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
-import { isAdminUser } from "@/lib/role-utils";
+import { isAdminUser, isSystemAdmin } from "@/lib/role-utils";
 import styles from "./page.module.css";
 
 // Unified Components
@@ -218,7 +218,7 @@ export default function UsersPage() {
       }
     ];
 
-    if (isAdminUser(authUser)) {
+    if (isSystemAdmin(authUser)) {
       cols.push({
         key: "company",
         header: "Company",

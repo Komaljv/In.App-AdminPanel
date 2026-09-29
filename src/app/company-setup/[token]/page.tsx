@@ -6,7 +6,7 @@ import {
   Eye, EyeOff, CheckCircle, AlertCircle,
   Building2, Hash, User, Mail, Lock, Globe
 } from "lucide-react";
-import {  getInviteDetails } from "@/lib/api";
+import { getInviteDetails, completeCompanyRegistration } from "@/lib/api";
 import { COUNTRIES } from "@/lib/countries";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -129,21 +129,21 @@ useEffect(() => {
     if (!form.country) { setError("Please select a country."); return; }
 
     setLoading(true);
-    // const res = await completeCompanyRegistration(token, form.password, {
-    //   name: form.masterName,
-    //   email: form.masterEmail,
-    //   phoneNumber: form.phoneNumber,
-    //   country: form.country,
-    //   companyName: form.companyName,
-    //   fiscalCode: form.fiscalNumber,
-    // });
+    const res = await completeCompanyRegistration(token, form.password, {
+      name: form.masterName,
+      email: form.masterEmail,
+      phoneNumber: form.phoneNumber,
+      country: form.country,
+      companyName: form.companyName,
+      fiscalCode: form.fiscalNumber,
+    });
     setLoading(false);
 
-    // if (res.success) {
-    //   setSuccess(true);
-    // } else {
-    //   setError(res.error || "Failed to complete registration.");
-    // }
+    if (res.success) {
+      setSuccess(true);
+    } else {
+      setError(res.error || "Failed to complete registration.");
+    }
   };
 
   if (verifying) {
