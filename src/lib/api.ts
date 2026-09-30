@@ -844,9 +844,15 @@ export async function createConversation(
 /** GET /api/conversations/:conversationId/messages */
 export async function getMessages(
   conversationId: string,
-  authToken: string
+  authToken: string,
+  limit: number = 20,
+  cursor?: string | null
 ): Promise<ApiResponse> {
-  return call(`/api/conversations/${conversationId}/messages`, { method: 'GET' }, authToken);
+  const params = new URLSearchParams();
+  params.append('limit', String(limit));
+  if (cursor) params.append('cursor', cursor);
+
+  return call(`/api/conversations/${conversationId}/messages?${params.toString()}`, { method: 'GET' }, authToken);
 }
 
 /** POST /api/conversations/:conversationId/messages */

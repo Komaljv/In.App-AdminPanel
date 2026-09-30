@@ -40,6 +40,9 @@ export default function ChatBot() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -48,6 +51,7 @@ export default function ChatBot() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [conversationUnreadCounts, setConversationUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesListRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<any>(null);
   const activeConversationRef = useRef(activeConversation);
   const isOpenRef = useRef(isOpen);
@@ -110,6 +114,7 @@ export default function ChatBot() {
             if (prev.some((m) => m.id === message.id)) return prev;
             return [...prev, message];
           });
+          setShouldAutoScroll(true);
         } else {
           // Increment unread count if chat is closed or we are in another conversation
           if (message.senderId !== user?.id) {
@@ -156,11 +161,50 @@ export default function ChatBot() {
   }, [activeConversation, user?.token]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+      setShouldAutoScroll(false);
+    }
+  }, [messages, shouldAutoScroll]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadMoreMessages = async () => {
+    if (!user?.token || !activeConversation || isFetchingMore || !hasMoreMessages || messages.length === 0) return;
+    setIsFetchingMore(true);
+    const oldestMessageId = messages[0].id;
+    const oldScrollHeight = messagesListRef.current?.scrollHeight || 0;
+
+    const res = await getMessages(activeConversation.id, user.token, 20, oldestMessageId);
+    if (res.success && res.data) {
+      const fetchedMessages = res.data as Message[];
+      if (fetchedMessages.length > 0) {
+        setMessages((prev) => {
+          const newMessages = [...fetchedMessages, ...prev];
+          return newMessages.filter(
+            (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
+          );
+        });
+        
+        // Restore scroll position
+        setTimeout(() => {
+          if (messagesListRef.current) {
+            const newScrollHeight = messagesListRef.current.scrollHeight;
+            messagesListRef.current.scrollTop = newScrollHeight - oldScrollHeight;
+          }
+        }, 0);
+      }
+      setHasMoreMessages(fetchedMessages.length === 20);
+    }
+    setIsFetchingMore(false);
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (e.currentTarget.scrollTop === 0) {
+      loadMoreMessages();
+    }
   };
 
   const handleSelectConversation = (conv: Conversation) => {
@@ -187,12 +231,15 @@ export default function ChatBot() {
   const fetchMessages = async (conversationId: string, silent = false) => {
     if (!user?.token) return;
     if (!silent) setIsLoading(true);
-    const res = await getMessages(conversationId, user.token);
+    const res = await getMessages(conversationId, user.token, 20);
     if (res.success && res.data) {
-      const uniqueMessages = (res.data as Message[]).filter(
+      const fetchedMessages = res.data as Message[];
+      const uniqueMessages = fetchedMessages.filter(
         (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
       );
       setMessages(uniqueMessages);
+      setHasMoreMessages(fetchedMessages.length === 20);
+      setShouldAutoScroll(true);
     }
     if (!silent) setIsLoading(false);
   };
@@ -210,6 +257,7 @@ export default function ChatBot() {
         return [...prev, newMsg];
       });
       setNewMessage('');
+      setShouldAutoScroll(true);
       fetchConversations(); // Update conversation list to show latest message
     }
     setIsSending(false);
@@ -395,7 +443,16 @@ export default function ChatBot() {
 
             {activeConversation && (
               <div className={styles.messageArea}>
-                <div className={styles.messagesList}>
+                <div 
+                  className={styles.messagesList}
+                  ref={messagesListRef}
+                  onScroll={handleScroll}
+                >
+                  {isFetchingMore && (
+                    <div style={{ textAlign: 'center', padding: '8px 0', color: '#64748b' }}>
+                      <Loader2 className={styles.spinner} size={16} style={{ display: 'inline' }} />
+                    </div>
+                  )}
                   {messages.map((msg, index) => {
                     const msgDate = new Date(msg.createdAt);
                     const prevMsg = index > 0 ? messages[index - 1] : null;
