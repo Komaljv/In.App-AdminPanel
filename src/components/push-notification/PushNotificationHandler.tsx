@@ -37,10 +37,13 @@ export default function PushNotificationHandler() {
         while (true) {
           const payload: any = await onMessageListener();
           if (payload && payload.notification) {
-            showToast(
-              `${payload.notification.title}: ${payload.notification.body}`,
-              "success"
-            );
+            // Don't show toast for chat messages on web, as ChatBot handles the UI
+            if (!payload.notification.title?.toLowerCase().includes("message")) {
+              showToast(
+                `${payload.notification.title}: ${payload.notification.body}`,
+                "success"
+              );
+            }
           }
         }
       } catch (error) {

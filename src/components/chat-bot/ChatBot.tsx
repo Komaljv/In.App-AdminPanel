@@ -45,17 +45,48 @@ export default function ChatBot() {
   const [isSending, setIsSending] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [showUserList, setShowUserList] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [conversationUnreadCounts, setConversationUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<any>(null);
   const activeConversationRef = useRef(activeConversation);
+  const isOpenRef = useRef(isOpen);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedGlobal = localStorage.getItem('chat_unreadCount');
+      if (storedGlobal) setUnreadCount(parseInt(storedGlobal, 10));
+
+      const storedConv = localStorage.getItem('chat_convUnreadCounts');
+      if (storedConv) setConversationUnreadCounts(JSON.parse(storedConv));
+    } catch (e) {
+      console.error('Error loading unread counts from localStorage', e);
+    }
+  }, []);
+
+  // Save to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('chat_unreadCount', unreadCount.toString());
+  }, [unreadCount]);
+
+  useEffect(() => {
+    localStorage.setItem('chat_convUnreadCounts', JSON.stringify(conversationUnreadCounts));
+  }, [conversationUnreadCounts]);
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
   }, [activeConversation]);
 
   useEffect(() => {
-    if (isOpen && user?.token) {
-      fetchConversations();
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (user?.token) {
+      if (isOpen) {
+        fetchConversations();
+      }
 
       // Initialize socket
       const socketUrl = APP_CONFIG.apiUrl || window.location.origin;
@@ -74,15 +105,26 @@ export default function ChatBot() {
         console.log('[ChatBot] Socket received new_message:', message);
         const currentActive = activeConversationRef.current;
         // If message belongs to active conversation, add it
-        if (currentActive && message.conversationId === currentActive.id) {
+        if (currentActive && message.conversationId === currentActive.id && isOpenRef.current) {
           setMessages((prev) => {
             if (prev.some((m) => m.id === message.id)) return prev;
             return [...prev, message];
           });
+        } else {
+          // Increment unread count if chat is closed or we are in another conversation
+          if (message.senderId !== user?.id) {
+            setUnreadCount(prev => prev + 1);
+            setConversationUnreadCounts(prev => ({
+              ...prev,
+              [message.conversationId]: (prev[message.conversationId] || 0) + 1
+            }));
+          }
         }
         
         // Refresh conversations to show latest message in list
-        fetchConversations();
+        if (isOpenRef.current) {
+          fetchConversations();
+        }
       });
 
       socketRef.current.on('user_status_changed', (data: { userId: string, isOnline: boolean }) => {
@@ -100,7 +142,7 @@ export default function ChatBot() {
         }
       };
     }
-  }, [isOpen, user?.token]);
+  }, [user?.token]);
 
   useEffect(() => {
     if (activeConversation && user?.token) {
@@ -119,6 +161,17 @@ export default function ChatBot() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSelectConversation = (conv: Conversation) => {
+    setActiveConversation(conv);
+    if (conversationUnreadCounts[conv.id]) {
+      setUnreadCount(prev => Math.max(0, prev - conversationUnreadCounts[conv.id]));
+      setConversationUnreadCounts(prev => ({
+        ...prev,
+        [conv.id]: 0
+      }));
+    }
   };
 
   const fetchConversations = async () => {
@@ -207,8 +260,18 @@ export default function ChatBot() {
     <div className={styles.container}>
       {/* Floating Button */}
       {!isOpen && (
-        <button className={styles.floatingButton} onClick={() => setIsOpen(true)}>
+        <button 
+          className={styles.floatingButton} 
+          onClick={() => {
+            setIsOpen(true);
+            setUnreadCount(0); // Reset unread count when opening
+            fetchConversations();
+          }}
+        >
           <MessageSquare size={24} />
+          {unreadCount > 0 && (
+            <div className={styles.unreadBadge}>{unreadCount > 99 ? '99+' : unreadCount}</div>
+          )}
         </button>
       )}
 
@@ -263,7 +326,7 @@ export default function ChatBot() {
                         <div
                           key={conv.id}
                           className={styles.conversationItem}
-                          onClick={() => setActiveConversation(conv)}
+                          onClick={() => handleSelectConversation(conv)}
                         >
                           <div className={styles.avatarContainer}>
                             <div className={styles.avatar}>
@@ -283,6 +346,11 @@ export default function ChatBot() {
                               {conv.messages?.[0]?.content || 'Click to chat'}
                             </div>
                           </div>
+                          {!!conversationUnreadCounts[conv.id] && (
+                            <div className={styles.convUnreadBadge}>
+                              {conversationUnreadCounts[conv.id]}
+                            </div>
+                          )}
                         </div>
                       );
                     })
