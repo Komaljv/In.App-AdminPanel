@@ -54,7 +54,7 @@
   gap: 8px;
   font-weight: var(--font-weight-semibold);
   font-size: var(--text-md);
-    line-height: var(--line-height-md);
+  line-height: var(--line-height-md);
 }
 
 .backButton {
@@ -63,7 +63,7 @@
   color: white;
   cursor: pointer;
   font-size: var(--text-lg);
-    line-height: var(--line-height-lg);
+  line-height: var(--line-height-lg);
   padding: 0 4px;
 }
 
@@ -111,8 +111,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .conversationList {
@@ -133,6 +138,23 @@
 
 .conversationItem:hover {
   background: rgba(99, 102, 241, 0.05);
+}
+
+.avatarContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.onlineIndicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background-color: #22c55e;
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 2;
 }
 
 .avatar {
@@ -162,12 +184,12 @@
   font-weight: var(--font-weight-semibold);
   color: #1e293b;
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
 }
 
 .convMessage {
   font-size: var(--text-xs);
-    line-height: var(--line-height-xs);
+  line-height: var(--line-height-xs);
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
@@ -184,7 +206,7 @@
   cursor: pointer;
   font-weight: var(--font-weight-semibold);
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -201,7 +223,7 @@
   color: #64748b;
   padding: 40px 20px;
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
 }
 
 .userList {
@@ -228,13 +250,13 @@
   font-weight: var(--font-weight-semibold);
   color: #1e293b;
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
   flex: 1;
 }
 
 .userEmail {
   font-size: var(--text-xs);
-    line-height: var(--line-height-xs);
+  line-height: var(--line-height-xs);
   color: #64748b;
 }
 
@@ -252,6 +274,22 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.dateDivider {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px 0;
+}
+
+.dateDivider span {
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .messageWrapper {
@@ -272,7 +310,7 @@
   padding: 10px 14px;
   border-radius: 16px;
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
   line-height: 1.4;
   position: relative;
 }
@@ -311,7 +349,7 @@
   border-radius: 20px;
   outline: none;
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
   transition: border-color 0.2s;
 }
 

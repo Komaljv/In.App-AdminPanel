@@ -37,7 +37,7 @@
 
 .title {
   font-size: var(--text-xl);
-    line-height: var(--line-height-xl);
+  line-height: var(--line-height-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
@@ -115,7 +115,7 @@
 
 .versionMeta {
   font-size: var(--text-base);
-    line-height: var(--line-height-base);
+  line-height: var(--line-height-base);
   color: var(--color-text-secondary);
 }
 
@@ -132,11 +132,23 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

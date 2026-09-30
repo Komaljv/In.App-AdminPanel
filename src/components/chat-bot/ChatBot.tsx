@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getConversations, getMessages, sendMessage, getAdminUsers } from '@/lib/api';
 import { MessageSquare, X, Send, User, Plus, Loader2 } from 'lucide-react';
@@ -27,6 +27,8 @@ interface Conversation {
     id: string;
     name: string;
     profileImage?: string;
+    isOnline?: boolean;
+    lastSeen?: string | null;
   }>;
   messages?: Message[];
   updatedAt: string;
@@ -57,7 +59,11 @@ export default function ChatBot() {
 
       // Initialize socket
       const socketUrl = APP_CONFIG.apiUrl || window.location.origin;
-      socketRef.current = io(socketUrl);
+      socketRef.current = io(socketUrl, {
+        auth: {
+          userId: user?.id
+        }
+      });
       console.log('[ChatBot] Socket initialized connecting to:', socketUrl);
 
       socketRef.current.on('connect', () => {
@@ -77,6 +83,15 @@ export default function ChatBot() {
         
         // Refresh conversations to show latest message in list
         fetchConversations();
+      });
+
+      socketRef.current.on('user_status_changed', (data: { userId: string, isOnline: boolean }) => {
+        console.log('[ChatBot] Socket received user_status_changed:', data);
+        setConversations(prev => prev.map(conv => ({
+          ...conv,
+          users: conv.users.map(u => u.id === data.userId ? { ...u, isOnline: data.isOnline } : u)
+        })));
+        setUsers(prev => prev.map(u => u.id === data.userId ? { ...u, isOnline: data.isOnline } : u));
       });
 
       return () => {
@@ -250,11 +265,16 @@ export default function ChatBot() {
                           className={styles.conversationItem}
                           onClick={() => setActiveConversation(conv)}
                         >
-                          <div className={styles.avatar}>
-                            {otherUser?.profileImage ? (
-                              <img src={otherUser.profileImage} alt={otherUser.name} />
-                            ) : (
-                              <User size={20} />
+                          <div className={styles.avatarContainer}>
+                            <div className={styles.avatar}>
+                              {otherUser?.profileImage ? (
+                                <img src={otherUser.profileImage} alt={otherUser.name} />
+                              ) : (
+                                <User size={20} />
+                              )}
+                            </div>
+                            {otherUser?.isOnline && (
+                              <div className={styles.onlineIndicator} title="Online" />
                             )}
                           </div>
                           <div className={styles.convDetails}>
@@ -285,11 +305,16 @@ export default function ChatBot() {
                       className={styles.userItem}
                       onClick={() => handleSelectUser(u)}
                     >
-                      <div className={styles.avatar}>
-                        {u.profileImage ? (
-                          <img src={u.profileImage} alt={u.name} />
-                        ) : (
-                          <User size={20} />
+                      <div className={styles.avatarContainer}>
+                        <div className={styles.avatar}>
+                          {u.profileImage ? (
+                            <img src={u.profileImage} alt={u.name} />
+                          ) : (
+                            <User size={20} />
+                          )}
+                        </div>
+                        {u.isOnline && (
+                          <div className={styles.onlineIndicator} title="Online" />
                         )}
                       </div>
                       <div className={styles.userName}>{u.name}</div>
@@ -303,20 +328,51 @@ export default function ChatBot() {
             {activeConversation && (
               <div className={styles.messageArea}>
                 <div className={styles.messagesList}>
-                  {messages.map((msg) => {
+                  {messages.map((msg, index) => {
+                    const msgDate = new Date(msg.createdAt);
+                    const prevMsg = index > 0 ? messages[index - 1] : null;
+                    const prevDate = prevMsg ? new Date(prevMsg.createdAt) : null;
+
+                    const isNewDay = !prevDate || msgDate.toDateString() !== prevDate.toDateString();
+
+                    let dateDividerText = '';
+                    if (isNewDay) {
+                      const today = new Date();
+                      const yesterday = new Date(today);
+                      yesterday.setDate(yesterday.getDate() - 1);
+
+                      if (msgDate.toDateString() === today.toDateString()) {
+                        dateDividerText = 'Today';
+                      } else if (msgDate.toDateString() === yesterday.toDateString()) {
+                        dateDividerText = 'Yesterday';
+                      } else {
+                        dateDividerText = msgDate.toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        });
+                      }
+                    }
+
                     const isMine = msg.senderId === user?.id;
                     return (
-                      <div
-                        key={msg.id}
-                        className={`${styles.messageWrapper} ${isMine ? styles.mine : styles.theirs}`}
-                      >
-                        <div className={styles.messageContent}>
-                          {msg.content}
-                          <div className={styles.messageTime}>
-                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <Fragment key={msg.id}>
+                        {isNewDay && (
+                          <div className={styles.dateDivider}>
+                            <span>{dateDividerText}</span>
+                          </div>
+                        )}
+                        <div
+                          className={`${styles.messageWrapper} ${isMine ? styles.mine : styles.theirs}`}
+                        >
+                          <div className={styles.messageContent}>
+                            {msg.content}
+                            <div className={styles.messageTime}>
+                              {msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Fragment>
                     );
                   })}
                   <div ref={messagesEndRef} />

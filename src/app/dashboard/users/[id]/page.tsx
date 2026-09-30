@@ -12,9 +12,6 @@ import {
   Clock,
   Grid,
   Layers,
-  Search,
-  ChevronDown,
-  CheckCircle,
   LogIn,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
