@@ -103,6 +103,27 @@ export default function UserAnalyticsPage() {
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
+  const loginHistoryColumns = React.useMemo<Column<any>[]>(() => [
+    {
+      key: "createdAt",
+      header: "Date & Time",
+      render: (log) => <span className={styles.dateCell}>{new Date(log.createdAt).toLocaleString()}</span>
+    },
+    {
+      key: "ipAddress",
+      header: "IP Address",
+      render: (log) => log.ipAddress || "—"
+    },
+    {
+      key: "userAgent",
+      header: "Device / Browser",
+      render: (log) => (
+        <span className={styles.listItemSub} title={log.userAgent || ""}>
+          {(log.userAgent && log.userAgent.length > 60) ? log.userAgent.substring(0, 60) + "..." : (log.userAgent || "—")}
+        </span>
+      )
+    }
+  ], []);
 
   const fetchAnalytics = useCallback(async () => {
     if (!authUser?.token || !id) return;
@@ -227,28 +248,6 @@ export default function UserAnalyticsPage() {
   const filteredDocs = (uploadedDocuments || []).filter((doc) =>
     doc.fileName.toLowerCase().includes(docSearch.toLowerCase())
   );
-
-  const loginHistoryColumns = React.useMemo<Column<any>[]>(() => [
-    {
-      key: "createdAt",
-      header: "Date & Time",
-      render: (log) => <span className={styles.dateCell}>{new Date(log.createdAt).toLocaleString()}</span>
-    },
-    {
-      key: "ipAddress",
-      header: "IP Address",
-      render: (log) => log.ipAddress || "—"
-    },
-    {
-      key: "userAgent",
-      header: "Device / Browser",
-      render: (log) => (
-        <span className={styles.listItemSub} title={log.userAgent || ""}>
-          {(log.userAgent && log.userAgent.length > 60) ? log.userAgent.substring(0, 60) + "..." : (log.userAgent || "—")}
-        </span>
-      )
-    }
-  ], []);
 
   return (
     <div className={styles.page}>

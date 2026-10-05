@@ -709,8 +709,8 @@ body {
    ════════════════════════════════════════════════════════════════ */
 .toast-container {
   position: fixed;
-  top: var(--space-6);
-  right: var(--space-6);
+  bottom: var(--space-8);
+  right: var(--space-8);
   z-index: 9999;
   display: flex;
   flex-direction: column;
