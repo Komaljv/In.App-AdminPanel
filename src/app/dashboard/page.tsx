@@ -10,7 +10,7 @@ import {
   getRecentActivity,
   type DashboardStats,
 } from "@/lib/api";
-import { isAdminUser } from "@/lib/role-utils";
+import {  isSystemAdmin } from "@/lib/role-utils";
 
 interface ActivityItem {
   email?: string;
@@ -64,7 +64,7 @@ export default function DashboardPage() {
       icon: Users,
       color: "#111827", // Accent black
     },
-    ...(isAdminUser(user) ? [{
+    ...(isSystemAdmin(user) ? [{
       label: "Total Companies",
       value: stats?.totalCompanies ?? "—",
       icon: Building2,
