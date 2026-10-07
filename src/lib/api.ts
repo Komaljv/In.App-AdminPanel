@@ -766,6 +766,15 @@ export async function deleteDocument(id: string, authToken: string): Promise<Api
   return call(`/api/documents/${id}`, { method: 'DELETE' }, authToken);
 }
 
+/** PUT /api/documents/:id */
+export async function updateDocument(
+  id: string,
+  data: { fileName?: string; categoryId?: string; folderId?: string | null },
+  authToken: string
+): Promise<ApiResponse> {
+  return call(`/api/documents/${id}`, { method: 'PUT', body: JSON.stringify(data) }, authToken);
+}
+
 /** GET /api/documents/:id/versions */
 export async function getDocumentVersions(id: string, authToken: string): Promise<ApiResponse> {
   return call(`/api/documents/${id}/versions`, { method: 'GET' }, authToken);
@@ -811,10 +820,10 @@ export async function getFolder(id: string, authToken: string): Promise<ApiRespo
 /** PATCH /api/folders/:id */
 export async function updateFolder(
   id: string,
-  name: string,
+  data: { name?: string; categoryId?: string },
   authToken: string
 ): Promise<ApiResponse> {
-  return call(`/api/folders/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) }, authToken);
+  return call(`/api/folders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }, authToken);
 }
 
 /** DELETE /api/folders/:id */

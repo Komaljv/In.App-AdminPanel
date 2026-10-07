@@ -200,7 +200,13 @@ export default function CategoriesPage() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Tag size={14} style={{ color: 'var(--color-primary)' }} />
-          <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{cat.name}</span>
+          <a 
+            href={`/dashboard/folders?categoryId=${cat.id}`} 
+            style={{ fontWeight: 'var(--font-weight-semibold)', color: 'inherit', textDecoration: 'none' }}
+            className="hover-underline"
+          >
+            {cat.name}
+          </a>
         </div>
       )
     },
@@ -240,6 +246,27 @@ export default function CategoriesPage() {
           </span>
         </div>
       )
+    },
+    {
+      key: "stats",
+      header: "Contents",
+      render: (cat: any) => {
+        const docs = cat.documentCount ?? cat._count?.documents ?? cat.documents?.length;
+        const folders = cat.folderCount ?? cat._count?.folders ?? cat.folders?.length;
+        return (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {docs !== undefined ? (
+              <Badge variant="primary">{docs} Docs</Badge>
+            ) : null}
+            {folders !== undefined ? (
+              <Badge variant="neutral">{folders} Folders</Badge>
+            ) : null}
+            {docs === undefined && folders === undefined ? (
+              <span style={{ color: 'var(--text-muted)' }}>—</span>
+            ) : null}
+          </div>
+        );
+      }
     },
     {
       key: "actions",

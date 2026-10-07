@@ -9,13 +9,15 @@ import { useToast } from "@/lib/toast-context";
 import styles from "./page.module.css";
 import DocumentVersionsModal from "./DocumentVersionsModal";
 import ShareModal from "./ShareModal";
+import MoveModal from "@/components/move-modal/MoveModal";
+import { Folder as FolderIcon } from "lucide-react";
 
 // Unified Components
 import { Button } from "@/components/ui/Button/Button";
 import { Input } from "@/components/ui/Input/Input";
 import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
-import { Card } from "@/components/ui/Card/Card";
+
 
 interface DocumentItem {
   id: string;
@@ -23,6 +25,7 @@ interface DocumentItem {
   mimeType: string;
   fileSize: number;
   createdAt: string;
+  folderId?: string;
   category?: {
     id: string;
     name: string;
@@ -46,6 +49,7 @@ function DocumentsPageContent() {
 
   const [selectedDocument, setSelectedDocument] = useState<{ id: string; name: string } | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: string; name: string } | null>(null);
+  const [moveTarget, setMoveTarget] = useState<{ id: string; name: string; categoryId?: string; folderId?: string } | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     if (!authUser?.token) return;
@@ -158,6 +162,15 @@ function DocumentsPageContent() {
           <Button 
             size="sm" 
             variant="ghost" 
+            leftIcon={<FolderIcon size={14} />} 
+            onClick={() => setMoveTarget({ id: doc.id, name: doc.fileName, categoryId: doc.category?.id, folderId: doc.folderId })} 
+            title="Move Document"
+          >
+            Move
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost" 
             leftIcon={<History size={14} />} 
             onClick={() => setSelectedDocument({ id: doc.id, name: doc.fileName })} 
             title="View version history"
@@ -231,6 +244,17 @@ function DocumentsPageContent() {
         itemId={shareTarget?.id || ""}
         itemName={shareTarget?.name || ""}
         itemType="file"
+      />
+      
+      <MoveModal
+        isOpen={!!moveTarget}
+        onClose={() => setMoveTarget(null)}
+        itemId={moveTarget?.id || ""}
+        itemName={moveTarget?.name || ""}
+        itemType="document"
+        currentCategoryId={moveTarget?.categoryId}
+        currentFolderId={moveTarget?.folderId}
+        onSuccess={fetchDocuments}
       />
     </div>
   );

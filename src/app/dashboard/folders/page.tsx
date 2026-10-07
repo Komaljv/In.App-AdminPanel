@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { Plus, Search, Pencil, Trash2, Folder as FolderIcon, X, Check, Share2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import ShareModal from "../documents/ShareModal";
+import MoveModal from "@/components/move-modal/MoveModal";
 import styles from "./page.module.css";
 
 // Unified Components
@@ -35,12 +37,14 @@ export interface Folder {
   };
 }
 
-export default function FoldersPage() {
+function FoldersPageContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
+  const searchParams = useSearchParams();
+  const initialCategoryId = searchParams.get("categoryId");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(initialCategoryId || "");
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +69,9 @@ export default function FoldersPage() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareItemId, setShareItemId] = useState("");
   const [shareItemName, setShareItemName] = useState("");
+
+  // Move Modal
+  const [moveTarget, setMoveTarget] = useState<{ id: string; name: string; categoryId: string } | null>(null);
 
   const fetchCategories = useCallback(async () => {
     if (!user?.token) return;
@@ -132,7 +139,7 @@ export default function FoldersPage() {
   const handleUpdate = async (id: string) => {
     if (!editName.trim() || !user?.token) return;
     setSaving(true);
-    const res = await updateFolder(id, editName.trim(), user.token);
+    const res = await updateFolder(id, { name: editName.trim() }, user.token);
     setSaving(false);
     if (res.success) {
       setFolders((prev) =>
@@ -198,7 +205,13 @@ export default function FoldersPage() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FolderIcon size={14} style={{ color: 'var(--color-primary)' }} />
-          <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{folder.name}</span>
+          <a 
+            href={`/dashboard/documents?categoryId=${folder.categoryId}&folderId=${folder.id}`} 
+            style={{ fontWeight: 'var(--font-weight-semibold)', color: 'inherit', textDecoration: 'none' }}
+            className="hover-underline"
+          >
+            {folder.name}
+          </a>
         </div>
       )
     },
@@ -221,6 +234,22 @@ export default function FoldersPage() {
       )
     },
     {
+      key: "stats",
+      header: "Contents",
+      render: (folder: any) => {
+        const docs = folder.documentCount ?? folder._count?.documents ?? folder.documents?.length;
+        return (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {docs !== undefined ? (
+              <Badge variant="primary">{docs} Docs</Badge>
+            ) : (
+              <span style={{ color: 'var(--text-muted)' }}>—</span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
       key: "actions",
       header: "",
       align: "right",
@@ -237,6 +266,9 @@ export default function FoldersPage() {
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
           <Button size="sm" variant="ghost" onClick={() => openShare(folder)} title="Share">
             <Share2 size={14} />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setMoveTarget({ id: folder.id, name: folder.name, categoryId: folder.categoryId })} title="Move">
+            <FolderIcon size={14} />
           </Button>
           <Button size="sm" variant="ghost" onClick={() => startEdit(folder)} title="Edit">
             <Pencil size={14} />
@@ -394,6 +426,26 @@ export default function FoldersPage() {
           itemType="folder"
         />
       )}
+
+      {moveTarget && (
+        <MoveModal
+          isOpen={!!moveTarget}
+          onClose={() => setMoveTarget(null)}
+          itemId={moveTarget.id}
+          itemName={moveTarget.name}
+          itemType="folder"
+          currentCategoryId={moveTarget.categoryId}
+          onSuccess={fetchFolders}
+        />
+      )}
     </div>
+  );
+}
+
+export default function FoldersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading folders...</div>}>
+      <FoldersPageContent />
+    </Suspense>
   );
 }
