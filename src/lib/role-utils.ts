@@ -37,5 +37,10 @@ export function isSystemAdmin(user: any): boolean {
     process.env.NEXT_PUBLIC_ADMIN_ROLE_NAME || "MASTER"
   ).toUpperCase();
 
-  return roleName?.toUpperCase() === systemAdminRole;
+  const isMasterRole = roleName?.toUpperCase() === systemAdminRole;
+  
+  // A System Admin is a Master specifically for the "Fred" platform company
+  const isFredPlatform = user.company?.name?.toUpperCase() === "FRED" || user.email === "admin@gmail.com";
+
+  return isMasterRole && isFredPlatform;
 }

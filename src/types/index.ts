@@ -184,3 +184,40 @@ export interface Toast {
   message: string;
   duration?: number;
 }
+
+// ─── FAQ Types ──────────────────────────────────────────────────────────────
+
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+  category?: string | null;
+  order: number;
+  isActive: boolean;
+  companyId?: string | null;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  creator?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface CreateFaqInput {
+  question: string;
+  answer: string;
+  category?: string | null;
+  order?: number;
+  isActive?: boolean;
+  isGlobal?: boolean;
+}
+
+export interface UpdateFaqInput {
+  question?: string;
+  answer?: string;
+  category?: string | null;
+  order?: number;
+  isActive?: boolean;
+}

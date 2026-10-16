@@ -341,7 +341,7 @@ export default function BillingPage() {
               <UsageCell usage={calculatedUsage} />
             </div>
           </div>
-        );
+        );  
       })()}
 
       {isAdminUser(user) && !isSystemAdmin(user) && (

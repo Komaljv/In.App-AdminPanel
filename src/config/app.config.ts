@@ -35,6 +35,8 @@ export const API_ENDPOINTS = {
     list: '/api/users',
     byId: (id: string) => `/api/users/${id}`,
     deactivate: (id: string) => `/api/users/${id}/deactivate`,
+    revokeEmail: (id: string) => `/api/admin/users/${id}/revoke-email`,
+    assignEmail: (id: string) => `/api/admin/users/${id}/assign-email`,
     changeRole: (id: string) => `/api/users/${id}/role`,
   },
   invitations: {

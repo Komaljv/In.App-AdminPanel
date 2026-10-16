@@ -12,6 +12,8 @@ import {
   updateRole,
   deleteRole,
   getCategories,
+  getPermissions
+  ,
   type Role,
   type Category
 } from "@/lib/api";
@@ -25,14 +27,7 @@ import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
-const PERMISSION_GROUPS = [
-  { name: "Role Management", perms: ["CREATE_ROLE", "READ_ROLE", "UPDATE_ROLE", "DELETE_ROLE"] },
-  { name: "Document Management", perms: ["CREATE_DOCUMENT", "READ_DOCUMENT", "UPDATE_DOCUMENT", "DELETE_DOCUMENT"] },
-  { name: "Category Management", perms: ["CREATE_CATEGORY", "READ_CATEGORY", "UPDATE_CATEGORY", "DELETE_CATEGORY"] },
-  { name: "User Management", perms: ["CREATE_USER", "READ_USER", "UPDATE_USER", "DELETE_USER"] },
-  { name: "Folder Management", perms: ["CREATE_FOLDER", "READ_FOLDER", "UPDATE_FOLDER", "DELETE_FOLDER"] },
-  { name: "Other Actions", perms: ["TEST_NOTIFICATION", "CREATE_PUBLIC_SHARE"] },
-];
+// Dynamic permission groups will be fetched from backend
 
 interface RoleForm {
   name: string;
@@ -48,6 +43,7 @@ export default function RolesPage() {
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [permissionGroups, setPermissionGroups] = useState<{name: string, perms: string[]}[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -65,9 +61,10 @@ export default function RolesPage() {
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
     setLoading(true);
-    const [rolesRes, categoriesRes] = await Promise.all([
+    const [rolesRes, categoriesRes, permissionsRes] = await Promise.all([
       getRoles(user.token),
-      getCategories(user.token)
+      getCategories(user.token),
+      getPermissions(user.token)
     ]);
     setLoading(false);
     
@@ -82,6 +79,21 @@ export default function RolesPage() {
         (cat) => cat.creator?.id === user.id
       );
       setCategories(userCategories);
+    }
+
+    if (permissionsRes.success && permissionsRes.data) {
+      const groups: Record<string, string[]> = {};
+      permissionsRes.data.forEach((perm) => {
+        const parts = perm.split('_');
+        const entity = parts.length > 1 ? parts.slice(1).join('_') : 'OTHER';
+        if (!groups[entity]) groups[entity] = [];
+        groups[entity].push(perm);
+      });
+      const formattedGroups = Object.entries(groups).map(([name, perms]) => ({
+        name: name.replace(/_/g, ' ') + " Management",
+        perms
+      }));
+      setPermissionGroups(formattedGroups);
     }
   }, [user?.token, showToast]);
 
@@ -142,9 +154,24 @@ export default function RolesPage() {
 
   const togglePermission = (perm: string) => {
     setFormState(prev => {
-      const perms = prev.permissions.includes(perm)
-        ? prev.permissions.filter(p => p !== perm)
-        : [...prev.permissions, perm];
+      let perms = [...prev.permissions];
+      
+      if (perms.includes('*')) {
+        const allPerms = permissionGroups.flatMap(g => g.perms);
+        perms = allPerms.filter(p => p !== perm);
+      } else {
+        if (perms.includes(perm)) {
+          perms = perms.filter(p => p !== perm);
+        } else {
+          perms.push(perm);
+          
+          const allPerms = permissionGroups.flatMap(g => g.perms);
+          if (perms.length === allPerms.length) {
+            perms = ['*'];
+          }
+        }
+      }
+      
       return { ...prev, permissions: perms };
     });
   };
@@ -193,11 +220,14 @@ export default function RolesPage() {
     {
       key: "permissions",
       header: "Permissions",
-      render: (role) => (
-        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-          {role.permissions?.length || 0} granted
-        </span>
-      )
+      render: (role) => {
+        const hasAll = role.permissions?.includes('*');
+        return (
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+            {hasAll ? 'All granted' : `${role.permissions?.length || 0} granted`}
+          </span>
+        );
+      }
     },
     {
       key: "categories",
@@ -295,19 +325,43 @@ export default function RolesPage() {
                 <label className="form-label">
                   Permissions
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginTop: '12px' }}>
-                  {PERMISSION_GROUPS.map(group => (
-                    <div key={group.name} style={{ background: 'rgba(255,255,255,0.4)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {group.name}
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ background: 'var(--bg-card, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.08))', borderRadius: '12px', overflow: 'hidden', marginTop: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                  {permissionGroups.map((group, index) => (
+                    <div key={group.name} style={{ 
+                      display: 'flex', 
+                      flexDirection: 'row',
+                      padding: '24px', 
+                      borderBottom: index < permissionGroups.length - 1 ? '1px solid var(--border-color, rgba(0,0,0,0.05))' : 'none',
+                      background: index % 2 === 0 ? 'rgba(0,0,0,0.015)' : 'transparent',
+                    }}>
+                      <div style={{ width: '280px', flexShrink: 0, paddingRight: '20px' }}>
+                        <h4 style={{ 
+                          margin: 0, 
+                          fontSize: '12px', 
+                          fontWeight: 700, 
+                          color: 'var(--color-text-secondary)',
+                          textTransform: 'uppercase', 
+                          letterSpacing: '0.06em'
+                        }}>
+                          {group.name}
+                        </h4>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 32px', flex: 1 }}>
                         {group.perms.map(perm => (
-                          <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                            <div className={styles.switch} style={{ transform: 'scale(0.85)', transformOrigin: 'left center', margin: 0 }}>
+                          <label key={perm} style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '10px', 
+                            cursor: 'pointer',
+                            minWidth: '220px'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                          >
+                            <div className={styles.switch} style={{ transform: 'scale(0.8)', transformOrigin: 'left center', margin: 0 }}>
                               <input
                                 type="checkbox"
-                                checked={formState.permissions.includes(perm)}
+                                checked={formState.permissions.includes('*') || formState.permissions.includes(perm)}
                                 onChange={() => togglePermission(perm)}
                               />
                               <span className={styles.slider}></span>

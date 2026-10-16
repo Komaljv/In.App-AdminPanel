@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Trash2, UserX, RefreshCw } from "lucide-react";
+import { AlertTriangle, Trash2, UserX, RefreshCw, MailX } from "lucide-react";
 import { Button } from "@/components/ui/Button/Button";
 import styles from "./confirm-dialog.module.css";
 
@@ -10,7 +10,7 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel?: string;
   variant?: "danger" | "warning";
-  icon?: "delete" | "deactivate" | "reactivate";
+  icon?: "delete" | "deactivate" | "reactivate" | "revokeEmail";
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -19,6 +19,7 @@ const ICONS = {
   delete: <Trash2 size={22} />,
   deactivate: <UserX size={22} />,
   reactivate: <RefreshCw size={22} />,
+  revokeEmail: <MailX size={22} />,
 };
 
 export default function ConfirmDialog({

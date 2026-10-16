@@ -13,10 +13,14 @@ import {
   Grid,
   Layers,
   LogIn,
+  MailX,
+  MailCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { getUserAnalytics, impersonateUser } from "@/lib/api";
+import { getUserAnalytics, impersonateUser, revokeUserEmail, type User } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
+import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
+import AssignEmailModal from "@/components/assign-email-modal/AssignEmailModal";
 import styles from "./page.module.css";
 import { Table, type Column } from "@/components/ui/Table/Table";
 
@@ -102,6 +106,9 @@ export default function UserAnalyticsPage() {
   const [docSearch, setDocSearch] = useState("");
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
+  const [isAssignEmailOpen, setIsAssignEmailOpen] = useState(false);
 
   const loginHistoryColumns = React.useMemo<Column<any>[]>(() => [
     {
@@ -205,7 +212,7 @@ export default function UserAnalyticsPage() {
           roleId: payload.user.roleId,
           role: payload.user.role?.name || "USER"
         };
-        showToast(`Now logged in as ${profile.name}`, "success");
+        showToast(`Now logged in as ${data?.profile?.name || "User"}`, "success");
         login(payload.accessToken, userData);
         router.push("/dashboard");
       } else {
@@ -213,6 +220,35 @@ export default function UserAnalyticsPage() {
       }
     } catch (err: any) {
       showToast(err.message || "Failed to login as user", "error");
+    }
+  };
+
+  const handleRevokeEmail = async () => {
+    if (!authUser?.token || !id) return;
+    setIsRevoking(true);
+    try {
+      const res = await revokeUserEmail(id, authUser.token);
+      if (res.success && res.data) {
+        showToast("User access revoked and email detached successfully", "success");
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            profile: {
+              ...prev.profile,
+              email: res.data?.email || prev.profile.email,
+              isActive: res.data?.isActive !== undefined ? res.data.isActive : false,
+            },
+          };
+        });
+      } else {
+        showToast(res.error || "Failed to revoke user access", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Failed to revoke user access", "error");
+    } finally {
+      setIsRevoking(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -260,7 +296,32 @@ export default function UserAnalyticsPage() {
           <h1 className={styles.title}>{profile.name}'s Analysis</h1>
           <p className={styles.subtitle}>Detailed activity & document usage overview</p>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "var(--space-3)" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+          {!profile.email?.startsWith("revoked_") ? (
+            <button
+              className="btn btn-outline"
+              style={{ color: "var(--color-danger, #ef4444)", borderColor: "rgba(239, 68, 68, 0.4)" }}
+              onClick={() => setConfirmOpen(true)}
+              title="Revoke user access and detach email address"
+            >
+              <MailX size={16} style={{ marginRight: 6 }} />
+              Revoke Email
+            </button>
+          ) : (
+            <>
+              <span className="badge badge-warning" style={{ padding: "6px 12px", fontSize: "0.8rem" }}>
+                Email Detached (Revoked)
+              </span>
+              <button
+                className="btn btn-primary"
+                onClick={() => setIsAssignEmailOpen(true)}
+                title="Assign a new email address to this profile"
+              >
+                <MailCheck size={16} style={{ marginRight: 6 }} />
+                Assign New Email
+              </button>
+            </>
+          )}
           <button className="btn btn-outline" onClick={handleImpersonate}>
             <LogIn size={16} style={{ marginRight: 6 }} />
             Login As User
@@ -289,7 +350,9 @@ export default function UserAnalyticsPage() {
               </div>
               <div className={styles.metaItem}>
                 <span className={styles.metaLabel}>Status</span>
-                {profile.isInvited ? (
+                {profile.email?.startsWith("revoked_") ? (
+                  <span className="badge badge-warning">Revoked</span>
+                ) : profile.isInvited ? (
                   <span className="badge badge-warning">Pending</span>
                 ) : (
                   <span className={`badge ${profile.isActive ? "badge-success" : "badge-danger"}`}>
@@ -571,6 +634,44 @@ export default function UserAnalyticsPage() {
           emptyMessage="No recent logins recorded."
         />
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title="Revoke Access & Detach Email"
+        message={`Are you sure you want to revoke access for "${profile.name}" (${profile.email})? Their active sessions will be terminated and their email address detached. All profile history, files, and permissions will be retained.`}
+        confirmLabel={isRevoking ? "Revoking..." : "Revoke Email Access"}
+        variant="danger"
+        icon="revokeEmail"
+        onConfirm={handleRevokeEmail}
+        onCancel={() => setConfirmOpen(false)}
+      />
+
+      <AssignEmailModal
+        isOpen={isAssignEmailOpen}
+        onClose={() => setIsAssignEmailOpen(false)}
+        user={{
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          companyId: profile.companyId,
+          roleId: profile.role?.id || "",
+          createdAt: profile.createdAt,
+          isActive: profile.isActive,
+        }}
+        onSuccess={(updatedUser) => {
+          setData((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              profile: {
+                ...prev.profile,
+                email: updatedUser.email,
+                isActive: updatedUser.isActive !== undefined ? updatedUser.isActive : true,
+              },
+            };
+          });
+        }}
+      />
     </div>
   );
 }

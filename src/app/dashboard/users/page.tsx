@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Search, MoreHorizontal, Trash2, UserX, Shield, BarChart2 } from "lucide-react";
+import { UserPlus, Search, MoreHorizontal, Trash2, UserX, Shield, BarChart2, MailX, MailCheck } from "lucide-react";
 import InviteModal from "@/components/invite-modal/InviteModal";
 import ChangeRoleModal from "@/components/change-role-modal/ChangeRoleModal";
 import NotificationModal from "@/components/notification-modal/NotificationModal";
+import AssignEmailModal from "@/components/assign-email-modal/AssignEmailModal";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminUsers, deleteUser, deactivateUser, activateUser, getCompanies, updateUser, type User, type Company } from "@/lib/api";
+import { getAdminUsers, deleteUser, deactivateUser, activateUser, revokeUserEmail, getCompanies, updateUser, type User, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { isAdminUser, isSystemAdmin } from "@/lib/role-utils";
 import styles from "./page.module.css";
@@ -16,9 +17,8 @@ import styles from "./page.module.css";
 // Unified Components
 import { Button } from "@/components/ui/Button/Button";
 import { Input } from "@/components/ui/Input/Input";
-import { Badge, statusVariant } from "@/components/ui/Badge/Badge";
+import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
-import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -39,6 +39,10 @@ export default function UsersPage() {
   const [isRoleOpen, setIsRoleOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
+  // Assign Email state
+  const [isAssignEmailOpen, setIsAssignEmailOpen] = useState(false);
+  const [assignEmailUser, setAssignEmailUser] = useState<User | null>(null);
+
   // Notification state
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notificationUser, setNotificationUser] = useState<User | null>(null);
@@ -46,7 +50,13 @@ export default function UsersPage() {
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
-  const [confirmMeta, setConfirmMeta] = useState({ title: "", message: "", confirmLabel: "Confirm", variant: "danger" as "danger" | "warning", icon: "delete" as "delete" | "deactivate" | "reactivate" });
+  const [confirmMeta, setConfirmMeta] = useState({
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    variant: "danger" as "danger" | "warning",
+    icon: "delete" as "delete" | "deactivate" | "reactivate" | "revokeEmail"
+  });
 
   const openConfirm = (meta: typeof confirmMeta, action: () => void) => {
     setConfirmMeta(meta);
@@ -176,9 +186,48 @@ export default function UsersPage() {
     );
   };
 
+  const handleRevokeEmail = (user: User) => {
+    openConfirm(
+      {
+        title: "Revoke Access & Detach Email",
+        message: `Revoke access for "${user.name}" (${user.email})? Active sessions will be terminated and the email address detached, while all uploads, permissions, and profile history will be preserved.`,
+        confirmLabel: "Revoke Email Access",
+        variant: "danger",
+        icon: "revokeEmail",
+      },
+      async () => {
+        if (!authUser?.token) return;
+        const res = await revokeUserEmail(user.id, authUser.token);
+        if (res.success && res.data) {
+          showToast("User access revoked and email detached successfully", "success");
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === user.id
+                ? {
+                    ...u,
+                    email: res.data?.email || u.email,
+                    isActive: res.data?.isActive !== undefined ? res.data.isActive : false,
+                  }
+                : u
+            )
+          );
+        } else {
+          showToast(res.error || "Failed to revoke user access", "error");
+        }
+        setOpenMenu(null);
+      }
+    );
+  };
+
   const openRoleModal = (u: User) => {
     setSelectedUser(u);
     setIsRoleOpen(true);
+    setOpenMenu(null);
+  };
+
+  const openAssignEmailModal = (u: User) => {
+    setAssignEmailUser(u);
+    setIsAssignEmailOpen(true);
     setOpenMenu(null);
   };
 
@@ -188,7 +237,9 @@ export default function UsersPage() {
       u.email.toLowerCase().includes(search.toLowerCase());
     
     let status = "active";
-    if (u.isInvited) {
+    if (u.email?.startsWith("revoked_")) {
+      status = "revoked";
+    } else if (u.isInvited) {
       status = "pending";
     } else if (u.isActive === false) {
       status = "inactive";
@@ -204,17 +255,28 @@ export default function UsersPage() {
       {
         key: "user",
         header: "User",
-        render: (u) => (
-          <div className={styles.userCell}>
-            <div className={styles.userAvatar}>
-              {u.name?.charAt(0).toUpperCase() || "U"}
+        render: (u) => {
+          const isRevoked = u.email?.startsWith("revoked_");
+          return (
+            <div className={styles.userCell}>
+              <div className={styles.userAvatar} style={isRevoked ? { background: 'linear-gradient(135deg, #64748b, #475569)' } : undefined}>
+                {u.name?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <div>
+                <p className={styles.userName}>{u.name}</p>
+                <p className={styles.userEmail} title={u.email}>
+                  {isRevoked ? (
+                    <span style={{ color: "var(--color-warning, #f59e0b)", fontStyle: "italic", fontSize: "0.72rem" }}>
+                      Email Revoked ({u.email})
+                    </span>
+                  ) : (
+                    u.email
+                  )}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className={styles.userName}>{u.name}</p>
-              <p className={styles.userEmail}>{u.email}</p>
-            </div>
-          </div>
-        )
+          );
+        }
       }
     ];
 
@@ -240,6 +302,7 @@ export default function UsersPage() {
         key: "status",
         header: "Status",
         render: (u) => {
+          if (u.email?.startsWith("revoked_")) return <Badge variant="warning" dot>revoked</Badge>;
           if (u.isInvited) return <Badge variant="warning" dot>pending</Badge>;
           return <Badge variant={u.isActive !== false ? "success" : "danger"} dot>
             {u.isActive !== false ? "active" : "inactive"}
@@ -317,6 +380,26 @@ export default function UsersPage() {
                   <UserX size={14} style={{ marginRight: 8 }} />
                   {u.isActive !== false ? "Deactivate" : "Reactivate"}
                 </button>
+                {!u.email?.startsWith("revoked_") ? (
+                  <button
+                    className="menu-item menu-item-warning"
+                    onClick={() => handleRevokeEmail(u)}
+                    title="Detach email and revoke access while preserving profile and uploads"
+                  >
+                    <MailX size={14} style={{ marginRight: 8, color: "var(--color-warning, #f59e0b)" }} />
+                    Revoke Email Access
+                  </button>
+                ) : (
+                  <button
+                    className="menu-item"
+                    onClick={() => openAssignEmailModal(u)}
+                    title="Assign a new email address to re-enable access for this profile"
+                    style={{ color: "var(--color-primary, #6366f1)", fontWeight: 500 }}
+                  >
+                    <MailCheck size={14} style={{ marginRight: 8, color: "var(--color-primary, #6366f1)" }} />
+                    Assign New Email
+                  </button>
+                )}
                 <button
                   className="menu-item menu-item-danger"
                   onClick={() => handleDelete(u.id, u.name)}
@@ -364,7 +447,7 @@ export default function UsersPage() {
         </div>
 
         <div className={styles.filters}>
-          {["all", "active", "pending", "inactive"].map((s) => (
+          {["all", "active", "pending", "inactive", "revoked"].map((s) => (
             <Button
               key={s}
               variant={statusFilter === s ? 'secondary' : 'outline'}
@@ -431,6 +514,18 @@ export default function UsersPage() {
         onClose={() => setIsRoleOpen(false)}
         user={selectedUser}
         onSuccess={fetchUsers}
+      />
+
+      <AssignEmailModal
+        isOpen={isAssignEmailOpen}
+        onClose={() => {
+          setIsAssignEmailOpen(false);
+          setAssignEmailUser(null);
+        }}
+        user={assignEmailUser}
+        onSuccess={() => {
+          fetchUsers();
+        }}
       />
 
       <NotificationModal

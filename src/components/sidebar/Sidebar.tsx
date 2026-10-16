@@ -18,6 +18,7 @@ import {
   Briefcase,
   FileText,
   CreditCard,
+  HelpCircle,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { isAdminUser, isSystemAdmin } from "@/lib/role-utils";
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/dashboard/activity", label: "Activity Logs", icon: Activity },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/reports", label: "Reports", icon: Activity },
+  { href: "/dashboard/faqs", label: "FAQs", icon: HelpCircle },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -84,6 +86,7 @@ export default function Sidebar() {
               "/dashboard/categories",
               "/dashboard/billing",
               "/dashboard/reports",
+              "/dashboard/faqs",
             ];
             
             if (item.href === "/dashboard/companies") {

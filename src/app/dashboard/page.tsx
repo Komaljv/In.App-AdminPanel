@@ -91,7 +91,7 @@ export default function DashboardPage() {
         <div>
           <h1 className={styles.title}>Dashboard</h1>
           <p className={styles.subtitle}>
-            Welcome back, <strong>{user?.company?.name || user?.name || user?.email}</strong>!
+            Welcome back, <strong>{user?.name || user?.company?.name || user?.email}</strong>!
           </p>
         </div>
   

@@ -8,6 +8,9 @@ import type {
   DashboardStats,
   PaginatedResponse,
   Company,
+  Faq,
+  CreateFaqInput,
+  UpdateFaqInput,
 } from '@/types';
 
 // Re-export all types so existing code importing from '@/lib/api' keeps working
@@ -20,6 +23,9 @@ export type {
   DashboardStats,
   PaginatedResponse,
   Company,
+  Faq,
+  CreateFaqInput,
+  UpdateFaqInput,
 };
 
 // Extra local-only types not in global types
@@ -401,6 +407,15 @@ export async function getInviteDetails(token: string): Promise<ApiResponse> {
   return call(`/api/auth/invite-details/${token}`, { method: 'GET' });
 }
 
+/** GET /api/company/invite-details/:token */
+export async function getCompanyInviteDetails(token: string): Promise<ApiResponse> {
+  return call(`/api/company/invite-details/${token}`, { method: 'GET' });
+}
+
+
+
+
+
 /** POST /api/auth/accept-invite */
 export async function acceptInvite(
   token: string,
@@ -525,6 +540,27 @@ export async function activateUser(id: string, authToken: string): Promise<ApiRe
   return call(`/api/admin/users/${id}/activate`, { method: 'PATCH' }, authToken);
 }
 
+/** PATCH /api/admin/users/:id/revoke-email */
+export async function revokeUserEmail(id: string, authToken: string): Promise<ApiResponse<User>> {
+  return call<User>(`/api/admin/users/${id}/revoke-email`, { method: 'PATCH' }, authToken);
+}
+
+/** PATCH /api/admin/users/:id/assign-email */
+export async function assignUserEmail(
+  id: string,
+  email: string,
+  authToken: string
+): Promise<ApiResponse<User>> {
+  return call<User>(
+    `/api/admin/users/${id}/assign-email`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ email }),
+    },
+    authToken
+  );
+}
+
 /** DELETE /api/admin/users/:id */
 export async function deleteUser(id: string, authToken: string): Promise<ApiResponse> {
   return call(`/api/admin/users/${id}`, { method: 'DELETE' }, authToken);
@@ -589,6 +625,8 @@ export async function updateProfile(
 export async function getCategories(authToken: string): Promise<ApiResponse<Category[]>> {
   return call<Category[]>('/api/categories', { method: 'GET' }, authToken);
 }
+
+
 
 /** POST /api/categories */
 export async function createCategory(
@@ -1006,4 +1044,58 @@ export async function getReportSummary(
   
   const queryString = params.toString() ? `?${params.toString()}` : '';
   return call<ReportSummary>(`/api/reports/summary${queryString}`, { method: 'GET' }, authToken);
+}
+
+
+export async function getPermissions(authToken: string): Promise<ApiResponse<string[]>> {
+  return call<string[]>('/api/admin/permissions', { method: 'GET' }, authToken);
+}
+
+
+// ─── FAQ API ────────────────────────────────────────────────────────────────
+
+export async function getFaqs(
+  authToken?: string,
+  params?: { category?: string; search?: string; includeInactive?: boolean }
+): Promise<ApiResponse<Faq[]>> {
+  const query = new URLSearchParams();
+  if (params?.category) query.set('category', params.category);
+  if (params?.search) query.set('search', params.search);
+  if (params?.includeInactive) query.set('includeInactive', 'true');
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return call<Faq[]>(`/api/faqs${qs}`, { method: 'GET' }, authToken);
+}
+
+export async function getFaqById(id: string, authToken?: string): Promise<ApiResponse<Faq>> {
+  return call<Faq>(`/api/faqs/${id}`, { method: 'GET' }, authToken);
+}
+
+export async function createFaq(
+  payload: CreateFaqInput,
+  authToken: string
+): Promise<ApiResponse<Faq>> {
+  return call<Faq>('/api/faqs', { method: 'POST', body: JSON.stringify(payload) }, authToken);
+}
+
+export async function updateFaq(
+  id: string,
+  payload: UpdateFaqInput,
+  authToken: string
+): Promise<ApiResponse<Faq>> {
+  return call<Faq>(`/api/faqs/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, authToken);
+}
+
+export async function deleteFaq(id: string, authToken: string): Promise<ApiResponse<null>> {
+  return call<null>(`/api/faqs/${id}`, { method: 'DELETE' }, authToken);
+}
+
+export async function restoreFaq(id: string, authToken: string): Promise<ApiResponse<Faq>> {
+  return call<Faq>(`/api/faqs/${id}/restore`, { method: 'POST' }, authToken);
+}
+
+export async function reorderFaqs(
+  items: { id: string; order: number }[],
+  authToken: string
+): Promise<ApiResponse<{ updatedCount: number }>> {
+  return call<{ updatedCount: number }>('/api/faqs/reorder', { method: 'PATCH', body: JSON.stringify({ items }) }, authToken);
 }

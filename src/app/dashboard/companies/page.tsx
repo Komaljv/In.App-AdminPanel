@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
@@ -178,8 +178,8 @@ export default function CompaniesPage() {
 
     if (createForm.fiscalCode.trim()) {
       const vatClean = createForm.fiscalCode.trim().replace(/[\s\-]/g, "");
-      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean)) {
-        showToast("Please enter a valid VAT number (5-20 alphanumeric characters).", "error");
+      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean) || !/[0-9]/.test(vatClean)) {
+        showToast("Please enter a valid VAT number containing numbers (5-20 chars).", "error");
         return;
       }
     }
@@ -215,8 +215,8 @@ export default function CompaniesPage() {
 
     if (editForm.fiscalCode.trim()) {
       const vatClean = editForm.fiscalCode.trim().replace(/[\s\-]/g, "");
-      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean)) {
-        showToast("Please enter a valid VAT number (5-20 alphanumeric characters).", "error");
+      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean) || !/[0-9]/.test(vatClean)) {
+        showToast("Please enter a valid VAT number containing numbers (5-20 chars).", "error");
         return;
       }
     }
@@ -324,6 +324,22 @@ export default function CompaniesPage() {
       key: "storageUsage",
       header: "Storage",
       render: (company) => <StorageUsageCell usage={company.usage} companyName={company.name} />
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (company: any) => {
+        let badgeVariant = "neutral";
+        if (company.status === "ACTIVE") badgeVariant = "success";
+        if (company.status === "PENDING") badgeVariant = "warning";
+        if (company.status === "INACTIVE") badgeVariant = "danger";
+
+        return (
+          <Badge variant={badgeVariant as any}>
+            {company.status || "PENDING"}
+          </Badge>
+        );
+      }
     },
     {
       key: "createdAt",
@@ -503,3 +519,6 @@ export default function CompaniesPage() {
     </div>
   );
 }
+
+
+

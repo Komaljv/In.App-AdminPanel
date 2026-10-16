@@ -6,7 +6,7 @@ import {
   Eye, EyeOff, CheckCircle, AlertCircle,
   Building2, Hash, User, Mail, Lock, Globe
 } from "lucide-react";
-import { getInviteDetails, completeCompanyRegistration } from "@/lib/api";
+import { getInviteDetails, completeCompanyRegistration, getCompanyInviteDetails } from "@/lib/api";
 import { COUNTRIES } from "@/lib/countries";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -15,6 +15,7 @@ interface FormData {
   companyName: string;
   fiscalNumber: string;
   masterName: string;
+  userName: string;
   masterEmail: string;
   phoneNumber: string;
   password: string;
@@ -37,6 +38,7 @@ export default function AcceptInvitePage() {
     companyName: urlCompanyName,
     fiscalNumber: urlFiscalCode,
     masterName: "Fred",
+    userName: "",
     masterEmail: urlEmail,
     phoneNumber: "",
     password: "",
@@ -59,14 +61,15 @@ useEffect(() => {
       return;
     }
     try {
-      const response = await getInviteDetails(token);
+      const response = await getCompanyInviteDetails(token);
       if (response.success && response.data) {
-        const data = response.data as { companyName: string; email: string; fiscalCode?: string };
+        const data = response.data as { companyName: string; email: string; fiscalCode?: string; masterName?: string };
         setForm(prev => ({
           ...prev,
           companyName: data.companyName,
           masterEmail: data.email,
           fiscalNumber: data.fiscalCode || "",
+          masterName: "Fred",
         }));
       } else {
         setError(response.error || "Invalid or expired invitation link.");
@@ -84,6 +87,28 @@ useEffect(() => {
   const set = (key: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
     setError("");
+  };
+
+  const handleVatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setForm((f) => ({ ...f, fiscalNumber: val }));
+    
+    if (val.trim()) {
+      const vatClean = val.replace(/[\s\-]/g, "");
+      if (!/^[a-zA-Z0-9]*$/.test(vatClean)) {
+        setError("VAT number can only contain letters and numbers.");
+      } else if (vatClean.length > 0 && vatClean.length < 5) {
+        setError("VAT number must be at least 5 characters.");
+      } else if (vatClean.length > 20) {
+        setError("VAT number cannot exceed 20 characters.");
+      } else if (!/[0-9]/.test(vatClean)) {
+        setError("VAT number must contain numbers.");
+      } else {
+        setError("");
+      }
+    } else {
+      setError("");
+    }
   };
 
   const getStrength = (pwd: string) => {
@@ -104,13 +129,13 @@ useEffect(() => {
     e.preventDefault();
     setError("");
 
-    if (!form.masterName.trim()) { setError("Master name is required."); return; }
-    if (!form.masterEmail.trim()) { setError("Master email is required."); return; }
+    if (!form.userName.trim()) { setError("User name is required."); return; }
+    if (!form.masterEmail.trim()) { setError("Email is required."); return; }
     
     if (form.fiscalNumber) {
       const vatClean = form.fiscalNumber.replace(/[\s\-]/g, "");
-      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean)) {
-        setError("Please enter a valid VAT number (5-20 alphanumeric characters).");
+      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean) || !/[0-9]/.test(vatClean)) {
+        setError("Please enter a valid VAT number containing numbers (5-20 chars).");
         return;
       }
     }
@@ -130,7 +155,7 @@ useEffect(() => {
 
     setLoading(true);
     const res = await completeCompanyRegistration(token, form.password, {
-      name: form.masterName,
+      name: form.userName,
       email: form.masterEmail,
       phoneNumber: form.phoneNumber,
       country: form.country,
@@ -280,13 +305,13 @@ useEffect(() => {
                 className={styles.fieldInput}
                 placeholder="VAT N°"
                 value={form.fiscalNumber}
-                onChange={set("fiscalNumber")}
+                onChange={handleVatChange}
               />
             </div>
 
             {/* Row 3: Master Name */}
-            <div className={`${styles.fieldGroup} ${styles.readOnly}`} style={{ marginBottom: 0 }}>
-              <div className={styles.fieldIcon}><User size={18} /></div>
+            <div className={styles.fieldGroup} style={{ marginBottom: 0 }}>
+              <div className={styles.fieldIcon}><Building2 size={18} /></div>
               <input
                 id="master-name"
                 type="text"
@@ -294,6 +319,18 @@ useEffect(() => {
                 placeholder="Master name"
                 value={form.masterName}
                 readOnly
+              />
+            </div>
+            
+            <div className={styles.fieldGroup} style={{ marginBottom: 0 }}>
+              <div className={styles.fieldIcon}><User size={18} /></div>
+              <input
+                id="user-name"
+                type="text"
+                className={styles.fieldInput}
+                placeholder="Your Full Name"
+                value={form.userName}
+                onChange={set("userName")}
               />
             </div>
 
