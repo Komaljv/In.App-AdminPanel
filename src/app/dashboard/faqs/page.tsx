@@ -29,6 +29,7 @@ import {
   reorderFaqs,
   type Faq,
   type CreateFaqInput,
+  type UpdateFaqInput,
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import { Button } from "@/components/ui/Button/Button";
@@ -44,11 +45,12 @@ const EMPTY_FORM: CreateFaqInput = {
   category: "General",
   order: 1,
   isActive: true,
-  isGlobal: true,
+  isGlobal: false,
 };
 
 export default function FaqsPage() {
   const { user } = useAuth();
+  const isMaster = user?.role === "MASTER";
   const { showToast } = useToast();
 
   const [faqs, setFaqs] = useState<Faq[]>([]);
@@ -91,6 +93,7 @@ export default function FaqsPage() {
     setEditingId(null);
     setForm({
       ...EMPTY_FORM,
+      isGlobal: isMaster ? true : false,
       order: (faqs.length > 0 ? Math.max(...faqs.map((f) => f.order || 0)) : 0) + 1,
     });
     setShowForm(true);
@@ -98,6 +101,12 @@ export default function FaqsPage() {
 
   // Open Edit Form
   const handleOpenEdit = (faq: Faq) => {
+    const isGlobalFaq = faq.companyId === null;
+    const canEdit = isMaster || (!isGlobalFaq && faq.companyId === user?.companyId);
+    if (!canEdit) {
+      showToast("Global FAQs can only be edited by Master Admin", "info");
+      return;
+    }
     setEditingId(faq.id);
     setForm({
       question: faq.question,
@@ -128,7 +137,15 @@ export default function FaqsPage() {
 
     setSaving(true);
     if (editingId) {
-      const res = await updateFaq(editingId, form, user.token);
+      const payload: UpdateFaqInput = {
+        question: form.question,
+        answer: form.answer,
+        category: form.category,
+        order: form.order,
+        isActive: form.isActive,
+        isGlobal: isMaster ? form.isGlobal : false,
+      };
+      const res = await updateFaq(editingId, payload, user.token);
       setSaving(false);
       if (res.success && res.data) {
         showToast("FAQ updated successfully", "success");
@@ -138,7 +155,11 @@ export default function FaqsPage() {
         showToast(res.error || "Failed to update FAQ", "error");
       }
     } else {
-      const res = await createFaq(form, user.token);
+      const payload: CreateFaqInput = {
+        ...form,
+        isGlobal: isMaster ? Boolean(form.isGlobal) : false,
+      };
+      const res = await createFaq(payload, user.token);
       setSaving(false);
       if (res.success && res.data) {
         showToast("FAQ created successfully", "success");
@@ -154,6 +175,12 @@ export default function FaqsPage() {
   const handleToggleActive = async (faq: Faq, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user?.token) return;
+    const isGlobalFaq = faq.companyId === null;
+    const canEdit = isMaster || (!isGlobalFaq && faq.companyId === user?.companyId);
+    if (!canEdit) {
+      showToast("Global FAQs can only be toggled by Master Admin", "info");
+      return;
+    }
     const nextStatus = !faq.isActive;
     const res = await updateFaq(faq.id, { isActive: nextStatus }, user.token);
     if (res.success) {
@@ -377,23 +404,29 @@ export default function FaqsPage() {
                 />
               </div>
 
-              <label className={styles.checkboxLabel}>
+              {/* <label className={styles.checkboxLabel}>
                 <input
                   type="checkbox"
                   checked={form.isActive}
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
                 <span>Active (Visible on Mobile)</span>
-              </label>
+              </label> */}
 
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={form.isGlobal}
-                  onChange={(e) => setForm({ ...form, isGlobal: e.target.checked })}
-                />
-                <span>Global FAQ (All Companies)</span>
-              </label>
+              {isMaster ? (
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={form.isGlobal}
+                    onChange={(e) => setForm({ ...form, isGlobal: e.target.checked })}
+                  />
+                  <span>Global FAQ (All Companies)</span>
+                </label>
+              ) : (
+                <div style={{ fontSize: "12px", color: "var(--color-text-secondary)", display: "flex", alignItems: "center" }}>
+                  <span>Company FAQ (Visible only to your company)</span>
+                </div>
+              )}
             </div>
 
             <div className={styles.formActions}>
@@ -469,6 +502,8 @@ export default function FaqsPage() {
         <div className={styles.faqList}>
           {filteredFaqs.map((faq, index) => {
             const isExpanded = Boolean(expandedIds[faq.id]);
+            const isGlobalFaq = faq.companyId === null;
+            const canEdit = isMaster || (!isGlobalFaq && faq.companyId === user?.companyId);
             return (
               <div
                 key={faq.id}
@@ -482,8 +517,10 @@ export default function FaqsPage() {
                       <Badge variant={faq.isActive ? "success" : "info"} dot>
                         {faq.isActive ? "Active" : "Draft"}
                       </Badge>
-                      {faq.companyId === null && (
-                        <Badge variant="primary">Global</Badge>
+                      {isGlobalFaq ? (
+                        <Badge variant="primary">Global FAQ</Badge>
+                      ) : (
+                        <Badge variant="neutral">Company FAQ</Badge>
                       )}
                     </div>
                     <div className={styles.faqQuestion}>{faq.question}</div>
@@ -494,6 +531,8 @@ export default function FaqsPage() {
 
                   {/* Actions & Ordering */}
                   <div className={styles.faqControls}>
+                    {canEdit && (
+                      <>
                     <button
                       className={styles.actionBtn}
                       title="Move Up"
@@ -547,6 +586,22 @@ export default function FaqsPage() {
                     >
                       <Trash2 size={15} />
                     </button>
+                      </>
+                    )}
+
+                    {!canEdit && (
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--color-text-secondary)",
+                          padding: "0 6px",
+                          fontStyle: "italic",
+                        }}
+                        title="System Global FAQ - Managed by Master Admin"
+                      >
+                        Read-Only
+                      </span>
+                    )}
 
                     <button
                       className={styles.actionBtn}

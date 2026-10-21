@@ -197,3 +197,30 @@
     padding: var(--space-5);
   }
 }
+.eyeBtn {
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.eyeBtn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-subtle);
+}
+
+.fullWidthCard {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .fullWidthCard {
+    grid-column: span 1;
+  }
+}

@@ -26,13 +26,19 @@ function DocumentViewContent() {
     if (isAuthLoading) return;
     
     if (!authUser) {
-      router.replace('/login');
+      router.replace(`/login?redirect=/document/${token}`);
       return;
     }
 
     getPrivateDocument(token, authUser.token)
       .then(res => {
-        if (!res.success) throw new Error(res.error || 'Failed to load document');
+        if (!res.success) {
+          if (res.error?.includes("Unauthorized") || res.error?.includes("token") || res.error?.includes("Authentication")) {
+            router.replace(`/login?redirect=/document/${token}`);
+            return;
+          }
+          throw new Error(res.error || 'Failed to load document');
+        }
         setData(res.data);
         setLoading(false);
       })

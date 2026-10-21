@@ -1,20 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Suspense, useState } from "react";
+import { Mail, Lock, Eye, EyeOff, Info } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { login as apiLogin } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./login.module.css";
 
-export default function LoginPage() {
+function LoginForm() {
   const { login: setAuth } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+  const redirectUrl =
+    redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+      ? redirectParam
+      : "/dashboard";
 
-  const [email, setEmail] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("admin@1234");
+  const [email, setEmail] = useState(redirectParam ? "" : "admin@gmail.com");
+  const [password, setPassword] = useState(redirectParam ? "" : "admin@1234");
   const [showPwd, setShowPwd] = useState(false);
 
   const [error, setError] = useState("");
@@ -37,7 +43,7 @@ export default function LoginPage() {
         };
 
         setAuth(accessToken, normalizedUser);
-        router.replace("/dashboard");
+        router.replace(redirectUrl);
       } else {
         setError(res.error || "Invalid credentials");
       }
@@ -80,6 +86,17 @@ export default function LoginPage() {
             <h2 className={styles.formTitle}>Sign In</h2>
             <p className={styles.formSubtitle}>Sign in to continue</p>
           </div>
+
+          {redirectParam && redirectParam.startsWith("/share/") && (
+            <div className={styles.noticeBox}>
+              <Info size={18} style={{ flexShrink: 0 }} />
+              <span>
+                {searchParams.get("reason") === "unauthorized"
+                  ? "This link was shared with a specific user. Please sign in with the authorized account."
+                  : "Please sign in to view the shared content."}
+              </span>
+            </div>
+          )}
        
           {error && (
             <div className={styles.errorBox}>
@@ -130,13 +147,6 @@ export default function LoginPage() {
 
             <div className={styles.formActions}>
               <label className={styles.checkboxLabel}>
-                {/* <input 
-                  type="checkbox" 
-                  className={styles.checkbox} 
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                <span>Remember me</span> */}
               </label>
               <Link href="/forgot-password" className={styles.forgotLink}>
                 Forgot your password?
@@ -154,5 +164,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className={styles.page} />}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -619,6 +619,21 @@ export async function updateProfile(
   return call('/api/users/profile', { method: 'PUT', body: form }, authToken);
 }
 
+/** POST /api/users/change-password */
+export async function changePassword(
+  authToken: string,
+  data: { oldPassword: string; newPassword: string }
+): Promise<ApiResponse<{ message?: string }>> {
+  return call<{ message?: string }>(
+    '/api/users/change-password',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    authToken
+  );
+}
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 /** GET /api/categories */
@@ -1001,6 +1016,90 @@ export async function getCompanyUsers(
 }
 
 // ─── Reports ────────────────────────────────────────────────────────────────
+
+export interface DashboardPeriod {
+  month?: string;
+  year?: number | null;
+  from?: string | null;
+  to?: string | null;
+}
+
+export interface DonutChart {
+  sales: number;
+  costs: number;
+  result: number;
+  profit: number;
+  formatted_sales: string;
+  formatted_costs: string;
+  formatted_result: string;
+  formatted_profit: string;
+}
+
+export interface VatCard {
+  title: string;
+  subtitle: string;
+  amount: number;
+  formatted_amount: string;
+  is_payable: boolean;
+  on_sales: string;
+  on_costs: string;
+}
+
+export interface WhtCard {
+  title: string;
+  subtitle: string;
+  customer_deducted: string;
+  supplier_retained: string;
+  net_payable: string;
+}
+
+export interface TaxItemCard {
+  title: string;
+  subtitle: string;
+  amount: number;
+  formatted_amount: string;
+}
+
+export interface DashboardTaxes {
+  vat: VatCard;
+  wht: WhtCard;
+  irt: TaxItemCard;
+  inss: TaxItemCard;
+}
+
+export interface ReportDashboard {
+  period: DashboardPeriod;
+  currency: string;
+  currency_code: string;
+  donut_chart: DonutChart;
+  taxes: DashboardTaxes;
+  note: string;
+}
+
+export interface GetReportDashboardParams {
+  month?: string | null;
+  year?: number | string | null;
+  from?: string | null;
+  to?: string | null;
+  currency?: string | null;
+}
+
+export async function getReportDashboard(
+  authToken: string,
+  params?: GetReportDashboardParams
+): Promise<ApiResponse<ReportDashboard>> {
+  const query = new URLSearchParams();
+  if (params?.month) query.append('month', params.month);
+  if (params?.year !== undefined && params?.year !== null && String(params.year).trim() !== '') {
+    query.append('year', String(params.year));
+  }
+  if (params?.from) query.append('from', params.from);
+  if (params?.to) query.append('to', params.to);
+  if (params?.currency) query.append('currency', params.currency);
+
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return call<ReportDashboard>(`/api/reports/dashboard${queryString}`, { method: 'GET' }, authToken);
+}
 
 export interface ReportSummary {
   period: {

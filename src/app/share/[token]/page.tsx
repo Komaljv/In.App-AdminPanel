@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { FileText, FolderArchive, Download, Lock, FileImage, FileCode,  FileSpreadsheet, FileArchive, FileVideo, FileAudio, File } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { FileText, FolderArchive, Download, Lock, FileImage, FileCode, FileSpreadsheet, FileArchive, FileVideo, FileAudio, File } from 'lucide-react';
+import { APP_CONFIG } from '@/config/app.config';
 import styles from './SharePage.module.css';
 
 export default function SharedLinkPage() {
   const params = useParams();
+  const router = useRouter();
   const token = params.token as string;
+  const API_URL = APP_CONFIG.apiUrl || 'http://localhost:3002';
   
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -20,46 +23,86 @@ export default function SharedLinkPage() {
       setError('');
       setLoading(true);
       try {
-        let res;
-        
-        let tokenFromStorage = null;
+        let tokenFromStorage: string | null = null;
         try {
           const stored = localStorage.getItem("crm_admin_auth");
           if (stored) {
             const parsed = JSON.parse(stored);
             if (parsed?.token) tokenFromStorage = parsed.token;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Could not read auth token from storage:', e);
+        }
         
-        // Try private share first if authenticated
+        // 1. Try private share first if authenticated
         if (tokenFromStorage) {
-          res = await fetch(`http://localhost:3002/api/documents/share/${token}`, {
-            headers: { Authorization: `Bearer ${tokenFromStorage}` }
-          });
-          if (res.ok) setIsPrivate(true);
-        }
-        
-        // Fallback to public share if private fails or not authenticated
-        if (!res || !res.ok) {
-          res = await fetch(`http://localhost:3002/api/documents/public/${token}`);
-          if (res.ok) setIsPrivate(false);
+          try {
+            const privateRes = await fetch(`${API_URL}/api/documents/share/${token}`, {
+              headers: { Authorization: `Bearer ${tokenFromStorage}` }
+            });
+
+            if (privateRes.ok) {
+              const json = await privateRes.json();
+              setIsPrivate(true);
+              setData(json.data);
+              setLoading(false);
+              return;
+            }
+
+            // If token expired, invalid (401), or unauthorized/forbidden (403, AUTH_FORBIDDEN):
+            if (privateRes.status === 401 || privateRes.status === 403) {
+              try {
+                localStorage.removeItem("crm_admin_auth");
+                window.dispatchEvent(new Event("auth-token-refreshed"));
+              } catch {}
+              router.push(`/login?redirect=/share/${token}&reason=unauthorized`);
+              return;
+            }
+          } catch (err) {
+            console.warn('Private share check failed, falling back to public share:', err);
+          }
         }
 
-        if (!res.ok) {
-          throw new Error('Invalid or expired link');
+        // 2. Fetch public share endpoint (or fallback for unauthenticated users)
+        const response = await fetch(`${API_URL}/api/documents/public/${token}`);
+        const result = await response.json().catch(() => ({}));
+
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          result.code === "AUTH_REQUIRED" ||
+          result.code === "AUTH_NO_TOKEN" ||
+          result.code === "AUTH_FORBIDDEN" ||
+          result.error?.code === "AUTH_REQUIRED" ||
+          result.error?.code === "AUTH_NO_TOKEN" ||
+          result.error?.code === "AUTH_FORBIDDEN"
+        ) {
+          // Redirect to login with return redirect URL
+          try {
+            localStorage.removeItem("crm_admin_auth");
+            window.dispatchEvent(new Event("auth-token-refreshed"));
+          } catch {}
+          router.push(`/login?redirect=/share/${token}&reason=unauthorized`);
+          return;
         }
 
-        const json = await res.json();
-        setData(json.data);
+        if (!response.ok) {
+          throw new Error(result.message || result.error?.message || 'Invalid or expired link');
+        }
+
+        setIsPrivate(false);
+        setData(result.data);
         setLoading(false);
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'An unexpected error occurred');
         setLoading(false);
       }
     };
 
-    fetchShare();
-  }, [token]);
+    if (token) {
+      fetchShare();
+    }
+  }, [token, router, API_URL]);
 
   useEffect(() => {
     if (!data?.share?.expiresAt) return;
@@ -116,7 +159,7 @@ export default function SharedLinkPage() {
                 If you are trying to access a private share, you must be logged in.
               </div>
               <a 
-                href="/login" 
+                href={`/login?redirect=/share/${token}`} 
                 style={{
                   background: 'white',
                   color: '#dc2626',
@@ -136,7 +179,7 @@ export default function SharedLinkPage() {
     );
   }
 
-  const isMultiFile = data.share.shareType === 'FOLDER' || data.share.shareType === 'CATEGORY';
+  const isMultiFile = data?.share?.shareType === 'FOLDER' || data?.share?.shareType === 'CATEGORY';
 
   return (
     <div className={styles.pageWrapper}>
@@ -155,7 +198,6 @@ export default function SharedLinkPage() {
             <span style={{ fontSize: '18px' }}>⚠️</span> This secure link has expired.
           </div>
         )}
-        
 
         {isMultiFile ? (
           <div className={`${styles.card} ${styles.cardWide}`}>
@@ -173,8 +215,8 @@ export default function SharedLinkPage() {
               </div>
               <a 
                 href={isPrivate && uToken 
-                  ? `http://localhost:3002/api/documents/share/${token}/download?access_token=${uToken}` 
-                  : `http://localhost:3002/api/documents/public/${token}/download`}
+                  ? `${API_URL}/api/documents/share/${token}/download?access_token=${uToken}` 
+                  : `${API_URL}/api/documents/public/${token}/download`}
                 className={styles.downloadBtn}
               >
                 <Download size={18} />
@@ -225,8 +267,8 @@ export default function SharedLinkPage() {
                               </div>
                               <a 
                                 href={isPrivate && uToken 
-                                  ? `http://localhost:3002/api/documents/share/${token}/download/${doc.id}?access_token=${uToken}` 
-                                  : `http://localhost:3002/api/documents/public/${token}/download/${doc.id}`}
+                                  ? `${API_URL}/api/documents/share/${token}/download/${doc.id}?access_token=${uToken}` 
+                                  : `${API_URL}/api/documents/public/${token}/download/${doc.id}`}
                                 className={styles.fileDownloadBtn}
                               >
                                 Download
@@ -247,8 +289,8 @@ export default function SharedLinkPage() {
                             </div>
                             <a 
                               href={isPrivate && uToken 
-                                ? `http://localhost:3002/api/documents/share/${token}/download/${doc.id}?access_token=${uToken}` 
-                                : `http://localhost:3002/api/documents/public/${token}/download/${doc.id}`}
+                                ? `${API_URL}/api/documents/share/${token}/download/${doc.id}?access_token=${uToken}` 
+                                : `${API_URL}/api/documents/public/${token}/download/${doc.id}`}
                               className={styles.fileDownloadBtn}
                             >
                               Download
@@ -278,13 +320,13 @@ export default function SharedLinkPage() {
             </p>
             
             <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
-              <div className={styles.fileName}>{data.document.fileName}</div>
+              <div className={styles.fileName}>{data?.document?.fileName || data?.share?.title || 'Shared Document'}</div>
             </div>
 
             <a 
               href={isPrivate && uToken 
-                ? `http://localhost:3002/api/documents/share/${token}/download?access_token=${uToken}` 
-                : `http://localhost:3002/api/documents/public/${token}/download`}
+                ? `${API_URL}/api/documents/share/${token}/download?access_token=${uToken}` 
+                : `${API_URL}/api/documents/public/${token}/download`}
               className={styles.downloadBtn}
             >
               <Download size={20} />

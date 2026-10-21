@@ -71,6 +71,11 @@ export const API_ENDPOINTS = {
     versions: (id: string) => `/api/documents/${id}/versions`,
     restoreVersion: (id: string, versionId: string) => `/api/documents/${id}/versions/${versionId}/restore`,
   },
+  reports: {
+    dashboard: '/api/reports/dashboard',
+    summary: '/api/reports/summary',
+    breakdown: '/api/reports/breakdown',
+  },
 } as const;
 
 /** Pagination defaults */

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, User, CreditCard } from "lucide-react";
+import { Save, User, CreditCard, Lock, Eye, EyeOff, ShieldCheck, Key } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { updateProfile, getMe, getCompanies, createCustomPlan, type Company } from "@/lib/api";
+import { updateProfile, getMe, getCompanies, createCustomPlan, changePassword, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { COUNTRIES } from "@/lib/countries";
 import styles from "./page.module.css";
@@ -11,18 +11,29 @@ import styles from "./page.module.css";
 import { Button } from "@/components/ui/Button/Button";
 import { Input } from "@/components/ui/Input/Input";
 import { Select } from "@/components/ui/Select/Select";
-import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
+import { Card } from "@/components/ui/Card/Card";
 
 export default function SettingsPage() {
   const { user, login } = useAuth();
   const { showToast } = useToast();
 
+  // Profile configuration state
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileCountry, setProfileCountry] = useState("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  // Account security (Change Password) state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // Stripe Plan customization state
   const [stripePlanName, setStripePlanName] = useState("");
   const [stripePlanPrice, setStripePlanPrice] = useState("");
   const [stripePlanCurrency, setStripePlanCurrency] = useState("USD");
@@ -32,8 +43,6 @@ export default function SettingsPage() {
   const [isSavingStripePlan, setIsSavingStripePlan] = useState(false);
   
   const [companies, setCompanies] = useState<Company[]>([]);
-
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -56,12 +65,8 @@ export default function SettingsPage() {
     }
   }, [user]);
 
-  const handleSaveSettings = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
-
   const isFredAdmin = user?.role === 'MASTER';
+
   const handleSaveProfile = async () => {
     if (!user?.token) return;
     setIsSavingProfile(true);
@@ -79,6 +84,47 @@ export default function SettingsPage() {
       }
     } else {
       showToast(res.error || "Failed to update profile", "error");
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (!user?.token) return;
+
+    if (!oldPassword) {
+      showToast("Please enter your current password", "error");
+      return;
+    }
+    if (!newPassword) {
+      showToast("Please enter a new password", "error");
+      return;
+    }
+    if (newPassword.length < 6) {
+      showToast("New password must be at least 6 characters long", "error");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("New passwords do not match", "error");
+      return;
+    }
+    if (oldPassword === newPassword) {
+      showToast("New password must be different from current password", "error");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    const res = await changePassword(user.token, {
+      oldPassword,
+      newPassword,
+    });
+    setIsSavingPassword(false);
+
+    if (res.success) {
+      showToast(res.message || "Password changed successfully", "success");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } else {
+      showToast(res.error || "Current password is incorrect", "error");
     }
   };
 
@@ -144,9 +190,96 @@ export default function SettingsPage() {
           </div>
         </Card>
 
+        {/* Account Security: Change Password */}
+        <Card padding="lg">
+          <div className={styles.sectionHead}>
+            <div className={styles.sectionIcon} style={{ background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b" }}>
+              <Lock size={18} />
+            </div>
+            <div>
+              <h2 className={styles.sectionTitle}>Account Security</h2>
+              <p className={styles.sectionDesc}>Update your password to keep your account safe</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-5)' }}>
+            <Input
+              id="current-password"
+              label="Current Password"
+              type={showOldPass ? "text" : "password"}
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              placeholder="Enter current password"
+              leftIcon={<Key size={16} />}
+              rightElement={
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => setShowOldPass(!showOldPass)}
+                  aria-label={showOldPass ? "Hide current password" : "Show current password"}
+                >
+                  {showOldPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              }
+            />
+
+            <Input
+              id="new-password"
+              label="New Password"
+              type={showNewPass ? "text" : "password"}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              leftIcon={<Lock size={16} />}
+              rightElement={
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  aria-label={showNewPass ? "Hide new password" : "Show new password"}
+                >
+                  {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              }
+            />
+
+            <Input
+              id="confirm-password"
+              label="Confirm New Password"
+              type={showConfirmPass ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter new password"
+              leftIcon={<ShieldCheck size={16} />}
+              rightElement={
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  aria-label={showConfirmPass ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              }
+            />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--space-6)" }}>
+            <Button 
+              variant="primary" 
+              onClick={handleSavePassword} 
+              disabled={isSavingPassword || !oldPassword || !newPassword || !confirmPassword}
+              loading={isSavingPassword}
+              leftIcon={<Lock size={15} />}
+            >
+              Update Password
+            </Button>
+          </div>
+        </Card>
+
         {/* Stripe Plan Customization */}
         {isFredAdmin && (
-        <Card padding="lg">
+        <Card padding="lg" className={styles.fullWidthCard}>
           <div className={styles.sectionHead}>
             <div className={styles.sectionIcon} style={{ background: "rgba(99, 102, 241, 0.12)", color: "#6366f1" }}>
               <CreditCard size={18} />

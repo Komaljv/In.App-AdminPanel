@@ -316,6 +316,20 @@
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+.noticeBox {
+  background: rgba(59, 130, 246, 0.15);
+  border-left: 4px solid #3b82f6;
+  color: #bfdbfe;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

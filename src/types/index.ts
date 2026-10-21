@@ -220,4 +220,5 @@ export interface UpdateFaqInput {
   category?: string | null;
   order?: number;
   isActive?: boolean;
+  isGlobal?: boolean;
 }
