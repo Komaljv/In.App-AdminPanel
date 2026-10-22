@@ -40,7 +40,8 @@ export function isSystemAdmin(user: any): boolean {
   const isMasterRole = roleName?.toUpperCase() === systemAdminRole;
   
   // A System Admin is a Master specifically for the "Fred" platform company
-  const isFredPlatform = user.company?.name?.toUpperCase() === "FRED" || user.email === "admin@gmail.com";
+  const companyName = user.company?.name || user.companyName;
+  const isFredPlatform = companyName?.toUpperCase() === "FRED" || user.email === "admin@gmail.com";
 
   return isMasterRole && isFredPlatform;
 }

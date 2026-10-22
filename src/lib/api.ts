@@ -729,10 +729,10 @@ export async function completeCompanyRegistration(
 /** PUT /api/company/:id */
 export async function updateCompany(
   id: string,
-  data: { name?: string; fiscalCode?: string },
+  data: { name?: string; fiscalCode?: string; email?: string; status?: string },
   authToken: string
-): Promise<ApiResponse> {
-  return call(`/api/company/${id}`, { method: 'PUT', body: JSON.stringify(data) }, authToken);
+): Promise<ApiResponse<Company>> {
+  return call<Company>(`/api/company/${id}`, { method: 'PUT', body: JSON.stringify(data) }, authToken);
 }
 
 /** DELETE /api/company/:id */
@@ -822,7 +822,7 @@ export async function deleteDocument(id: string, authToken: string): Promise<Api
 /** PUT /api/documents/:id */
 export async function updateDocument(
   id: string,
-  data: { fileName?: string; categoryId?: string; folderId?: string | null },
+  data: { fileName?: string; categoryId?: string; folderId?: string | null; expiryDate?: string | null; lifecycleStatus?: string },
   authToken: string
 ): Promise<ApiResponse> {
   return call(`/api/documents/${id}`, { method: 'PUT', body: JSON.stringify(data) }, authToken);

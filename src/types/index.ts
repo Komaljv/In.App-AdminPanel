@@ -136,6 +136,8 @@ export interface ActivityItem {
 export interface Company {
   id: string;
   name: string;
+  email?: string | null;
+  status?: "PENDING" | "ACTIVE" | "INACTIVE" | string;
   fiscalCode?: string;
   createdAt?: string;
   subscriptionStatus?: string | null;

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { updateProfile, getMe, getCompanies, createCustomPlan, changePassword, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { COUNTRIES } from "@/lib/countries";
+import { isSystemAdmin } from "@/lib/role-utils";
 import styles from "./page.module.css";
 
 import { Button } from "@/components/ui/Button/Button";
@@ -50,8 +51,8 @@ export default function SettingsPage() {
       setProfileEmail(user.email || "");
       setProfileCountry((user as any).country || "");
       
-      // Load companies for the dropdown
-      if (user.token) {
+      // Load companies for the dropdown (Fred system admin only)
+      if (user.token && isSystemAdmin(user)) {
         getCompanies(user.token, 1, 100).then(res => {
           if (res.success && res.data) {
             const arr = Array.isArray(res.data) ? res.data : (res.data as any).items || (res.data as any).data || [];
@@ -65,7 +66,7 @@ export default function SettingsPage() {
     }
   }, [user]);
 
-  const isFredAdmin = user?.role === 'MASTER';
+  const isFredAdmin = isSystemAdmin(user);
 
   const handleSaveProfile = async () => {
     if (!user?.token) return;

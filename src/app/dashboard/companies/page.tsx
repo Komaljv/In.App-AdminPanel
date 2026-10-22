@@ -1,20 +1,21 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Plus, Search,  Building2, X, Check,
-  ChevronLeft, ChevronRight, Users, HardDrive
+  Plus, Search, Building2, X, Check,
+  ChevronLeft, ChevronRight, Users, HardDrive,
+  Pencil, Trash2
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
 import {
   getCompanies,
   createCompany,
-  updateCompany,
   deleteCompany,
   type Company,
 } from "@/lib/api";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
+import EditCompanyModal from "@/components/edit-company-modal/EditCompanyModal";
 import styles from "../users/page.module.css";
 import { useRouter } from "next/navigation";
 import { isSystemAdmin } from "@/lib/role-utils";
@@ -128,10 +129,9 @@ export default function CompaniesPage() {
   const [createForm, setCreateForm] = useState<CompanyForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
 
-  // Edit state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<CompanyForm>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  // Edit state (modal)
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Delete confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -200,48 +200,6 @@ export default function CompaniesPage() {
     }
   };
 
-  const startEdit = (company: Company) => {
-    setEditingId(company.id);
-    setEditForm({ companyName: company.name, email: "", fiscalCode: company.fiscalCode ?? "" });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm(EMPTY_FORM);
-  };
-
-  const handleUpdate = async (id: string) => {
-    if (!editForm.companyName.trim() || !user?.token) return;
-
-    if (editForm.fiscalCode.trim()) {
-      const vatClean = editForm.fiscalCode.trim().replace(/[\s\-]/g, "");
-      if (!/^[a-zA-Z0-9]{5,20}$/.test(vatClean) || !/[0-9]/.test(vatClean)) {
-        showToast("Please enter a valid VAT number containing numbers (5-20 chars).", "error");
-        return;
-      }
-    }
-
-    setSaving(true);
-    const res = await updateCompany(
-      id,
-      { name: editForm.companyName.trim(), fiscalCode: editForm.fiscalCode.trim() || undefined },
-      user.token
-    );
-    setSaving(false);
-    if (res.success) {
-      setCompanies((prev) =>
-        prev.map((c) =>
-          c.id === id
-            ? { ...c, name: editForm.companyName.trim(), fiscalCode: editForm.fiscalCode.trim() || undefined }
-            : c
-        )
-      );
-      cancelEdit();
-      showToast("Company updated", "success");
-    } else {
-      showToast(res.error || "Failed to update company", "error");
-    }
-  };
 
   const openDelete = (company: Company) => {
     setDeletingId(company.id);
@@ -264,7 +222,8 @@ export default function CompaniesPage() {
 
   const filtered = companies.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.fiscalCode ?? "").toLowerCase().includes(search.toLowerCase())
+    (c.fiscalCode ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    (c.email ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const columns = useMemo<Column<Company>[]>(() => [
@@ -277,39 +236,26 @@ export default function CompaniesPage() {
     {
       key: "name",
       header: "Company Name",
-      render: (company) => editingId === company.id ? (
-        <Input
-          id={`edit-company-name-${company.id}`}
-          type="text"
-          value={editForm.companyName}
-          onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleUpdate(company.id);
-            if (e.key === "Escape") cancelEdit();
-          }}
-          autoFocus
-        />
-      ) : (
+      render: (company) => (
         <div className={styles.userCell}>
           <div className={styles.userAvatar}>
             <Building2 size={16} />
           </div>
-          <span className={styles.userName}>{company.name}</span>
+          <div>
+            <span className={styles.userName}>{company.name}</span>
+            {company.email && (
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                {company.email}
+              </span>
+            )}
+          </div>
         </div>
       )
     },
     {
       key: "fiscalCode",
       header: "VAT N°",
-      render: (company) => editingId === company.id ? (
-        <Input
-          id={`edit-company-fiscal-${company.id}`}
-          type="text"
-          value={editForm.fiscalCode}
-          placeholder="VAT N° (optional)"
-          onChange={(e) => setEditForm((f) => ({ ...f, fiscalCode: e.target.value }))}
-        />
-      ) : (
+      render: (company) => (
         <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.9em' }}>
           {company.fiscalCode || <span style={{ opacity: 0.5 }}>—</span>}
         </span>
@@ -350,8 +296,43 @@ export default function CompaniesPage() {
         </span>
       )
     },
-    
-  ], [page, LIMIT, editingId, editForm]);
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (company) => {
+        const isDefault = company.name?.toLowerCase() === "fred";
+        return (
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setEditingCompany(company);
+                setIsEditModalOpen(true);
+              }}
+              title="Edit Company"
+              id={`edit-company-${company.id}`}
+            >
+              <Pencil size={14} />
+            </Button>
+            {!isDefault && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-danger"
+                onClick={() => openDelete(company)}
+                title="Delete Company"
+                id={`delete-company-${company.id}`}
+              >
+                <Trash2 size={14} color="var(--color-danger-text)" />
+              </Button>
+            )}
+          </div>
+        );
+      }
+    }
+  ], [page, LIMIT]);
 
   return (
     <div className={styles.page}>
@@ -509,12 +490,26 @@ export default function CompaniesPage() {
       <ConfirmDialog
         isOpen={confirmOpen}
         title="Delete Company"
-        message={`Permanently delete "${deletingName}"? This cannot be undone.`}
+        message={`Permanently delete "${deletingName}" and all associated users, roles, and settings? This cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         icon="delete"
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <EditCompanyModal
+        isOpen={isEditModalOpen}
+        company={editingCompany}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingCompany(null);
+        }}
+        onSuccess={(updated) => {
+          setCompanies((prev) =>
+            prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+          );
+        }}
       />
     </div>
   );
