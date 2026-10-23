@@ -75,6 +75,9 @@ export const API_ENDPOINTS = {
     dashboard: '/api/reports/dashboard',
     summary: '/api/reports/summary',
     breakdown: '/api/reports/breakdown',
+    documents: '/api/reports/documents',
+    editInvoice: (id: string) => `/api/reports/documents/${id}/invoice`,
+    deleteDocument: (id: string) => `/api/reports/documents/${id}`,
   },
 } as const;
 

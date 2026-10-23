@@ -1145,6 +1145,86 @@ export async function getReportSummary(
   return call<ReportSummary>(`/api/reports/summary${queryString}`, { method: 'GET' }, authToken);
 }
 
+export interface ReportDocumentItem {
+  document_id: string;
+  file_name: string;
+  doc_type: string | null;
+  direction?: string | null;
+  counterparty?: string | null;
+  total?: string | null;
+  currency?: string | null;
+  status: string;
+  source_page?: number | null;
+  reason?: string | null;
+  reason_code?: string | null;
+  warnings?: string[];
+  statement_in?: string | null;
+  statement_out?: string | null;
+  invoice_number?: string | null;
+  issue_date?: string | null;
+  due_date?: string | null;
+  tax_amount?: string | null;
+  retention_amount?: string | null;
+  paid_in_cash?: boolean;
+  counterparty_name?: string | null;
+  counterparty_nif?: string | null;
+  worker_tax?: string | null;
+}
+
+export interface ReportDocumentsResponse {
+  counted: number;
+  rows: ReportDocumentItem[];
+}
+
+export interface GetReportDocumentsParams {
+  from?: string;
+  to?: string;
+}
+
+export async function getReportDocuments(
+  authToken: string,
+  params?: GetReportDocumentsParams
+): Promise<ApiResponse<ReportDocumentsResponse>> {
+  const query = new URLSearchParams();
+  if (params?.from) query.append('from', params.from);
+  if (params?.to) query.append('to', params.to);
+
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return call<ReportDocumentsResponse>(`/api/reports/documents${queryString}`, { method: 'GET' }, authToken);
+}
+
+export interface EditExtractedInvoicePayload {
+  invoice_number?: string;
+  issue_date?: string;
+  due_date?: string;
+  total?: string;
+  tax_amount?: string;
+  retention_amount?: string;
+  paid_in_cash?: boolean;
+  counterparty_name?: string;
+  counterparty_nif?: string;
+  worker_tax?: string;
+  [key: string]: any;
+}
+
+export async function editExtractedInvoice(
+  authToken: string,
+  documentId: string,
+  payload: EditExtractedInvoicePayload
+): Promise<ApiResponse<any>> {
+  return call<any>(`/api/reports/documents/${documentId}/invoice`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, authToken);
+}
+
+export async function deleteReportDocument(
+  authToken: string,
+  documentId: string
+): Promise<ApiResponse<any>> {
+  return call<any>(`/api/reports/documents/${documentId}`, { method: 'DELETE' }, authToken);
+}
+
 
 export async function getPermissions(authToken: string): Promise<ApiResponse<string[]>> {
   return call<string[]>('/api/admin/permissions', { method: 'GET' }, authToken);

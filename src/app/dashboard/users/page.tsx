@@ -326,7 +326,7 @@ export default function UsersPage() {
             />
             <span className={styles.slider}></span>
           </label>
-        )
+        ) 
       },
       {
         key: "privateShare",

@@ -2,7 +2,15 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getReportDashboard, type ReportDashboard } from "@/lib/api";
+import { useToast } from "@/lib/toast-context";
+import {
+  getReportDashboard,
+  getReportDocuments,
+  deleteReportDocument,
+  type ReportDashboard,
+  type ReportDocumentItem,
+  type ReportDocumentsResponse,
+} from "@/lib/api";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -16,9 +24,22 @@ import {
   Calendar,
   Layers,
   FileSpreadsheet,
-  Coins
+  Coins,
+  FileText,
+  CheckCircle2,
+  Clock,
+  Trash2,
+  Edit3,
+  Search,
+  Filter,
+  ArrowUpRight,
+  ArrowDownLeft,
+  FileCheck2,
+  AlertTriangle
 } from "lucide-react";
 import styles from "./page.module.css";
+import EditInvoiceModal from "./EditInvoiceModal";
+import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 
 // Unified Components
 import { Button } from "@/components/ui/Button/Button";
@@ -27,6 +48,7 @@ import { Card } from "@/components/ui/Card/Card";
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   
   // Set default dates: first day of current month to today
   const today = useMemo(() => new Date(), []);
@@ -37,10 +59,30 @@ export default function ReportsPage() {
   const [currency, setCurrency] = useState("AOA");
   
   const [report, setReport] = useState<ReportDashboard | null>(null);
+  const [reportDocuments, setReportDocuments] = useState<ReportDocumentsResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [docsLoading, setDocsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hoveredSlice, setHoveredSlice] = useState<"sales" | "costs" | null>(null);
 
+  // Document table controls & filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusTab, setStatusTab] = useState<"all" | "counted" | "excluded" | "processing">("all");
+  const [docTypeFilter, setDocTypeFilter] = useState("all");
+
+  // Edit Invoice Modal state
+  const [editingDoc, setEditingDoc] = useState<ReportDocumentItem | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Delete Document Confirm state
+  const [deletingDoc, setDeletingDoc] = useState<ReportDocumentItem | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  /**
+   * Fetches the report data in sequence:
+   * 1. First, call Dashboard API (/api/reports/dashboard) -> loads financial performance & tax assessment
+   * 2. Then, call Report Documents API (/api/reports/documents) -> loads uploaded documents & extraction audit
+   */
   const fetchReport = async () => {
     if (!user?.token) return;
     
@@ -48,21 +90,36 @@ export default function ReportsPage() {
     setError(null);
     
     try {
-      const res = await getReportDashboard(user.token, {
+      // Step 1: First API call — Dashboard (shows all users / company aggregate history for period)
+      const dashboardRes = await getReportDashboard(user.token, {
         from: fromDate || undefined,
         to: toDate || undefined,
         currency: currency || "AOA",
       });
 
-      if (res.success && res.data) {
-        setReport(res.data);
+      if (dashboardRes.success && dashboardRes.data) {
+        setReport(dashboardRes.data);
       } else {
-        setError(typeof res.error === "string" ? res.error : "Failed to load report dashboard.");
+        setError(typeof dashboardRes.error === "string" ? dashboardRes.error : "Failed to load report dashboard.");
+      }
+
+      // Step 2: Then API call — Report Documents for the same period
+      setDocsLoading(true);
+      const docsRes = await getReportDocuments(user.token, {
+        from: fromDate || undefined,
+        to: toDate || undefined,
+      });
+
+      if (docsRes.success && docsRes.data) {
+        setReportDocuments(docsRes.data);
+      } else {
+        console.warn("Report documents fetch returned:", docsRes.error);
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred while generating the report.");
     } finally {
       setLoading(false);
+      setDocsLoading(false);
     }
   };
 
@@ -71,6 +128,70 @@ export default function ReportsPage() {
       fetchReport();
     }
   }, [user?.token]);
+
+  // Handle document deletion
+  const handleDeleteConfirm = async () => {
+    if (!user?.token || !deletingDoc?.document_id) return;
+    try {
+      const res = await deleteReportDocument(user.token, deletingDoc.document_id);
+      if (res.success) {
+        showToast("Document deleted and reports recalculated successfully", "success");
+        setIsDeleteConfirmOpen(false);
+        setDeletingDoc(null);
+        // Refresh both dashboard & documents
+        fetchReport();
+      } else {
+        showToast(res.error || "Failed to delete document", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Error deleting document", "error");
+    }
+  };
+
+  // Filtered documents list for the UI
+  const filteredDocuments = useMemo(() => {
+    if (!reportDocuments?.rows) return [];
+    return reportDocuments.rows.filter((doc) => {
+      // Status tab
+      if (statusTab === "counted" && doc.status !== "counted") return false;
+      if (statusTab === "processing" && doc.status !== "processing") return false;
+      if (statusTab === "excluded" && (doc.status === "counted" || doc.status === "processing")) return false;
+
+      // Doc type filter
+      if (docTypeFilter !== "all" && doc.doc_type?.toLowerCase() !== docTypeFilter.toLowerCase()) {
+        return false;
+      }
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = doc.file_name?.toLowerCase().includes(q);
+        const matchCounterparty = (doc.counterparty_name || doc.counterparty || "").toLowerCase().includes(q);
+        const matchNif = (doc.counterparty_nif || "").toLowerCase().includes(q);
+        const matchInvoice = (doc.invoice_number || "").toLowerCase().includes(q);
+        if (!matchName && !matchCounterparty && !matchNif && !matchInvoice) return false;
+      }
+
+      return true;
+    });
+  }, [reportDocuments, statusTab, docTypeFilter, searchQuery]);
+
+  // Document counts for tabs
+  const tabCounts = useMemo(() => {
+    if (!reportDocuments?.rows) return { all: 0, counted: 0, excluded: 0, processing: 0 };
+    const all = reportDocuments.rows.length;
+    let counted = 0;
+    let processing = 0;
+    let excluded = 0;
+
+    for (const r of reportDocuments.rows) {
+      if (r.status === "counted") counted++;
+      else if (r.status === "processing") processing++;
+      else excluded++;
+    }
+
+    return { all, counted, excluded, processing };
+  }, [reportDocuments]);
 
   // Donut chart calculations
   const donutData = useMemo(() => {
@@ -476,8 +597,357 @@ export default function ReportsPage() {
               <span>{report.note}</span>
             </div>
           )}
+
+          {/* ── SECTION 4: Report Documents (Linked API) ── */}
+          <div className={styles.documentsSection}>
+            <div className={styles.sectionTitle}>
+              <h2>
+                <FileText size={20} style={{ color: "#8b5cf6" }} />
+                Report Documents & Extraction Status
+              </h2>
+              <span className={styles.sectionSubtitle}>
+                {reportDocuments ? (
+                  <>
+                    <strong style={{ color: "#059669" }}>{reportDocuments.counted}</strong> counted in calculations · {reportDocuments.rows.length} total in period
+                  </>
+                ) : docsLoading ? (
+                  "Retrieving report documents..."
+                ) : (
+                  "Document audit trail"
+                )}
+              </span>
+            </div>
+
+            <div className={styles.docsCard}>
+              {/* Controls bar */}
+              <div className={styles.docsControls}>
+                {/* Status Tabs */}
+                <div className={styles.docsFilterTabs}>
+                  <button
+                    className={`${styles.docsTab} ${statusTab === "all" ? styles.docsTabActive : ""}`}
+                    onClick={() => setStatusTab("all")}
+                  >
+                    All <span className={styles.tabCount}>{tabCounts.all}</span>
+                  </button>
+                  <button
+                    className={`${styles.docsTab} ${statusTab === "counted" ? styles.docsTabActive : ""}`}
+                    onClick={() => setStatusTab("counted")}
+                  >
+                    Counted <span className={styles.tabCount}>{tabCounts.counted}</span>
+                  </button>
+                  <button
+                    className={`${styles.docsTab} ${statusTab === "excluded" ? styles.docsTabActive : ""}`}
+                    onClick={() => setStatusTab("excluded")}
+                  >
+                    Excluded <span className={styles.tabCount}>{tabCounts.excluded}</span>
+                  </button>
+                  <button
+                    className={`${styles.docsTab} ${statusTab === "processing" ? styles.docsTabActive : ""}`}
+                    onClick={() => setStatusTab("processing")}
+                  >
+                    Processing <span className={styles.tabCount}>{tabCounts.processing}</span>
+                  </button>
+                </div>
+
+                {/* Search & Type filter */}
+                <div className={styles.docsSearchAndFilter}>
+                  <div className={styles.searchWrap}>
+                    <Search size={14} className={styles.searchIcon} />
+                    <input
+                      type="text"
+                      className={styles.searchInput}
+                      placeholder="Search document, supplier, NIF..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+
+                  <select
+                    className={styles.typeSelect}
+                    value={docTypeFilter}
+                    onChange={(e) => setDocTypeFilter(e.target.value)}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="invoice">Invoices</option>
+                    <option value="statement">Bank Statements</option>
+                    <option value="receipt">Receipts</option>
+                    <option value="slip">Payment Slips</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table / List */}
+              <div className={styles.tableContainer}>
+                {docsLoading && !reportDocuments ? (
+                  <div className={styles.emptyStateWrap}>
+                    <div className={styles.spinner} style={{ width: 28, height: 28 }} />
+                    <p>Loading documents for selected period...</p>
+                  </div>
+                ) : filteredDocuments.length === 0 ? (
+                  <div className={styles.emptyStateWrap}>
+                    <FileCheck2 size={40} style={{ color: "#94a3b8" }} />
+                    <h3>No documents found</h3>
+                    <p>
+                      {searchQuery || statusTab !== "all" || docTypeFilter !== "all"
+                        ? "No documents match the selected filters or search query."
+                        : "No documents recorded for this period. Upload invoices or bank statements in the Documents module to generate automated reports."}
+                    </p>
+                  </div>
+                ) : (
+                  <table className={styles.docsTable}>
+                    <thead>
+                      <tr>
+                        <th>Document</th>
+                        <th>Counterparty & Flow</th>
+                        <th>Dates & Ref</th>
+                        <th>Total Amount</th>
+                        <th>Status & Reason</th>
+                        <th style={{ textAlign: "right" }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredDocuments.map((doc) => {
+                        const isInvoice = doc.doc_type?.toLowerCase() === "invoice";
+                        return (
+                          <tr key={doc.document_id} className={styles.docsTableRow}>
+                            {/* Col 1: Document */}
+                            <td>
+                              <div className={styles.docInfoCol}>
+                                <div className={styles.docFileIcon}>
+                                  <FileText size={18} />
+                                </div>
+                                <div className={styles.docTextWrap}>
+                                  <span className={styles.docFileName} title={doc.file_name}>
+                                    {doc.file_name}
+                                  </span>
+                                  <div className={styles.docBadgeRow}>
+                                    <span className={styles.typePill}>
+                                      {doc.doc_type === "statement"
+                                        ? "Bank Statement"
+                                        : doc.doc_type === "invoice"
+                                        ? "Invoice"
+                                        : doc.doc_type === "receipt"
+                                        ? "Receipt"
+                                        : doc.doc_type === "slip"
+                                        ? "Payment Slip"
+                                        : doc.doc_type || "Document"}
+                                    </span>
+                                    {doc.source_page && (
+                                      <span className={styles.pagePill}>p. {doc.source_page}</span>
+                                    )}
+                                    {doc.paid_in_cash && (
+                                      <span
+                                        className={styles.pagePill}
+                                        style={{ background: "#fef3c7", color: "#92400e" }}
+                                      >
+                                        Cash
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Col 2: Counterparty & Flow */}
+                            <td>
+                              <div className={styles.counterpartyCol}>
+                                <span className={styles.counterpartyTitle}>
+                                  {doc.counterparty_name ||
+                                    doc.counterparty ||
+                                    (doc.doc_type === "statement" ? "Bank Statement" : "—")}
+                                </span>
+                                <div className={styles.metaSub}>
+                                  {doc.counterparty_nif && (
+                                    <span className={styles.nifTag}>NIF: {doc.counterparty_nif}</span>
+                                  )}
+                                  {doc.direction && (
+                                    <span
+                                      className={`${styles.directionTag} ${
+                                        doc.direction === "sale"
+                                          ? styles.directionSale
+                                          : styles.directionPurchase
+                                      }`}
+                                    >
+                                      {doc.direction === "sale" ? (
+                                        <>
+                                          <ArrowUpRight size={12} /> Sale
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ArrowDownLeft size={12} /> Purchase
+                                        </>
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Col 3: Dates & Reference */}
+                            <td>
+                              <div className={styles.dateCol}>
+                                {doc.invoice_number && (
+                                  <span className={styles.invoiceNum}>#{doc.invoice_number}</span>
+                                )}
+                                {doc.issue_date && (
+                                  <span className={styles.dateText}>
+                                    Date: {doc.issue_date.split("T")[0]}
+                                  </span>
+                                )}
+                                {doc.due_date && (
+                                  <span className={styles.dateText}>
+                                    Due: {doc.due_date.split("T")[0]}
+                                  </span>
+                                )}
+                                {!doc.invoice_number && !doc.issue_date && !doc.due_date && (
+                                  <span className={styles.dateText}>—</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Col 4: Amount & Taxes */}
+                            <td>
+                              <div className={styles.amountCol}>
+                                {doc.statement_in || doc.statement_out ? (
+                                  <>
+                                    {doc.statement_in && (
+                                      <span className={styles.flowIn}>+{doc.statement_in} Kz in</span>
+                                    )}
+                                    {doc.statement_out && (
+                                      <span className={styles.flowOut}>-{doc.statement_out} Kz out</span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className={styles.amountMain}>
+                                    {doc.total ? `${doc.total} ${doc.currency || "Kz"}` : "0.00 Kz"}
+                                  </span>
+                                )}
+
+                                {doc.tax_amount && Number(doc.tax_amount) > 0 && (
+                                  <span className={styles.taxBreakdownSmall}>
+                                    VAT: {doc.tax_amount}
+                                  </span>
+                                )}
+                                {doc.retention_amount && Number(doc.retention_amount) > 0 && (
+                                  <span className={styles.taxBreakdownSmall}>
+                                    WHT: {doc.retention_amount}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Col 5: Status & Reason */}
+                            <td>
+                              <div className={styles.statusCol}>
+                                {doc.status === "counted" ? (
+                                  <span className={`${styles.statusBadge} ${styles.statusCounted}`}>
+                                    <CheckCircle2 size={12} />
+                                    Counted
+                                  </span>
+                                ) : doc.status === "processing" ? (
+                                  <span className={`${styles.statusBadge} ${styles.statusProcessing}`}>
+                                    <Clock size={12} />
+                                    Processing
+                                  </span>
+                                ) : doc.status === "excluded_duplicate" ? (
+                                  <span className={`${styles.statusBadge} ${styles.statusDuplicate}`}>
+                                    <AlertTriangle size={12} />
+                                    Duplicate
+                                  </span>
+                                ) : (
+                                  <span className={`${styles.statusBadge} ${styles.statusExcluded}`}>
+                                    {doc.status}
+                                  </span>
+                                )}
+
+                                {doc.reason && (
+                                  <span className={styles.reasonExplain}>{doc.reason}</span>
+                                )}
+                                {doc.warnings && doc.warnings.length > 0 && (
+                                  <div className={styles.docBadgeRow}>
+                                    {doc.warnings.map((w, idx) => (
+                                      <span key={idx} className={styles.warningItem} title={w}>
+                                        {w}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Col 6: Actions */}
+                            <td className={styles.actionsCell}>
+                              <div className={styles.actionsRow}>
+                                {isInvoice && (
+                                  <button
+                                    className={styles.iconBtn}
+                                    title="Edit extracted invoice fields"
+                                    onClick={() => {
+                                      setEditingDoc(doc);
+                                      setIsEditModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit3 size={15} />
+                                  </button>
+                                )}
+                                <button
+                                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                                  title="Delete / archive document"
+                                  onClick={() => {
+                                    setDeletingDoc(doc);
+                                    setIsDeleteConfirmOpen(true);
+                                  }}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
         </>
       ) : null}
+
+      {/* ── Edit Extracted Invoice Modal ── */}
+      {user?.token && (
+        <EditInvoiceModal
+          isOpen={isEditModalOpen}
+          document={editingDoc}
+          authToken={user.token}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingDoc(null);
+          }}
+          onSuccess={() => {
+            fetchReport();
+          }}
+        />
+      )}
+
+      {/* ── Confirm Delete Document Dialog ── */}
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title="Delete & Recalculate Report"
+        message={
+          deletingDoc
+            ? `Are you sure you want to delete "${deletingDoc.file_name}"? The document will be removed and the financial report metrics will recalculate immediately.`
+            : "Are you sure you want to delete this document?"
+        }
+        confirmLabel="Delete & Recalculate"
+        variant="danger"
+        icon="delete"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setIsDeleteConfirmOpen(false);
+          setDeletingDoc(null);
+        }}
+      />
     </div>
   );
 }
