@@ -6,6 +6,7 @@ import { Search, Filter, FileText, Download, History, Share2 } from "lucide-reac
 import { useAuth } from "@/lib/auth-context";
 import { searchDocuments } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
+import { isAdminUser } from "@/lib/role-utils";
 import styles from "./page.module.css";
 import DocumentVersionsModal from "./DocumentVersionsModal";
 import ShareModal from "./ShareModal";
@@ -35,6 +36,7 @@ interface DocumentItem {
 function DocumentsPageContent() {
   const { user: authUser } = useAuth();
   const { showToast } = useToast();
+  const isAdmin = isAdminUser(authUser);
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,29 +56,49 @@ function DocumentsPageContent() {
   const fetchDocuments = useCallback(async () => {
     if (!authUser?.token) return;
     setLoading(true);
-    const params = {
+    const params: Record<string, any> = {
       page,
       limit: LIMIT,
       q: search || undefined,
       categoryId: categoryId || undefined,
     };
+    if (!isAdmin && authUser?.id) {
+      params.uploadedBy = authUser.id;
+    }
     const res = await searchDocuments(authUser.token, params);
     setLoading(false);
     if (res.success && res.data) {
+      let docList: DocumentItem[] = [];
+      let totalCount = 0;
+      let totalPagesCount = 1;
       if (Array.isArray(res.data)) {
-        setDocuments(res.data);
-        setTotalPages(1);
-        setTotal(res.data.length);
+        docList = res.data;
+        totalCount = res.data.length;
       } else {
         const paged = res.data as { data?: DocumentItem[]; meta?: any };
-        setDocuments(paged.data || []);
-        setTotalPages(paged.meta?.totalPages || 1);
-        setTotal(paged.meta?.total || 0);
+        docList = paged.data || [];
+        totalPagesCount = paged.meta?.totalPages || 1;
+        totalCount = paged.meta?.total || 0;
       }
+
+      if (!isAdmin) {
+        docList = docList.filter(
+          (doc: any) =>
+            doc.uploadedBy === authUser?.id ||
+            doc.creator?.id === authUser?.id ||
+            doc.creator?.email === authUser?.email
+        );
+        totalCount = docList.length;
+        totalPagesCount = Math.ceil(totalCount / LIMIT) || 1;
+      }
+
+      setDocuments(docList);
+      setTotalPages(totalPagesCount);
+      setTotal(totalCount);
     } else {
       showToast(res.error || "Failed to load documents", "error");
     }
-  }, [authUser?.token, page, search, categoryId, showToast]);
+  }, [authUser?.token, isAdmin, authUser?.id, authUser?.email, page, search, categoryId, showToast]);
 
   useEffect(() => {
     // simple debounce for search

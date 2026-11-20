@@ -3,10 +3,19 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getConversations, getMessages, sendMessage, getAdminUsers } from '@/lib/api';
-import { MessageSquare, X, Send, User, Plus, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, User, Plus, Loader2, Paperclip, FileText, Download } from 'lucide-react';
 import styles from './ChatBot.module.css';
 import { io } from 'socket.io-client';
 import { APP_CONFIG } from '@/config/app.config';
+
+interface MessageAttachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileKey?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
+}
 
 interface Message {
   id: string;
@@ -19,6 +28,7 @@ interface Message {
     profileImage?: string;
   };
   createdAt: string;
+  attachments?: MessageAttachment[];
 }
 
 interface Conversation {
@@ -55,6 +65,35 @@ export default function ChatBot() {
   const socketRef = useRef<any>(null);
   const activeConversationRef = useRef(activeConversation);
   const isOpenRef = useRef(isOpen);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatFileSize = (bytes?: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const isImageFile = (mime?: string | null, fileName?: string) => {
+    if (mime && mime.startsWith('image/')) return true;
+    if (fileName) {
+      return /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(fileName);
+    }
+    return false;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setSelectedFiles((prev) => [...prev, ...filesArray]);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -246,10 +285,10 @@ export default function ChatBot() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeConversation || !user?.token || isSending) return;
+    if ((!newMessage.trim() && selectedFiles.length === 0) || !activeConversation || !user?.token || isSending) return;
 
     setIsSending(true);
-    const res = await sendMessage(activeConversation.id, newMessage, user.token);
+    const res = await sendMessage(activeConversation.id, newMessage, user.token, selectedFiles);
     if (res.success && res.data) {
       const newMsg = res.data as Message;
       setMessages((prev) => {
@@ -257,6 +296,7 @@ export default function ChatBot() {
         return [...prev, newMsg];
       });
       setNewMessage('');
+      setSelectedFiles([]);
       setShouldAutoScroll(true);
       fetchConversations(); // Update conversation list to show latest message
     }
@@ -391,7 +431,10 @@ export default function ChatBot() {
                           <div className={styles.convDetails}>
                             <div className={styles.convName}>{otherUser?.name || 'Unknown'}</div>
                             <div className={styles.convMessage}>
-                              {conv.messages?.[0]?.content || 'Click to chat'}
+                              {conv.messages?.[0]?.content ||
+                                (conv.messages?.[0]?.attachments?.length
+                                  ? `📎 ${conv.messages[0].attachments[0].fileName}`
+                                  : 'Click to chat')}
                             </div>
                           </div>
                           {!!conversationUnreadCounts[conv.id] && (
@@ -491,7 +534,54 @@ export default function ChatBot() {
                           className={`${styles.messageWrapper} ${isMine ? styles.mine : styles.theirs}`}
                         >
                           <div className={styles.messageContent}>
-                            {msg.content}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className={styles.attachmentsContainer}>
+                                {msg.attachments.map((att) => {
+                                  const isImg = isImageFile(att.mimeType, att.fileName);
+                                  return (
+                                    <div key={att.id} className={styles.attachmentItem}>
+                                      {isImg ? (
+                                        <a
+                                          href={att.fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={styles.imageAttachmentLink}
+                                        >
+                                          <img
+                                            src={att.fileUrl}
+                                            alt={att.fileName}
+                                            className={styles.imageAttachment}
+                                          />
+                                        </a>
+                                      ) : (
+                                        <a
+                                          href={att.fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={styles.fileAttachment}
+                                        >
+                                          <div className={styles.fileIcon}>
+                                            <FileText size={18} />
+                                          </div>
+                                          <div className={styles.fileDetails}>
+                                            <span className={styles.fileName} title={att.fileName}>
+                                              {att.fileName}
+                                            </span>
+                                            {att.fileSize && (
+                                              <span className={styles.fileSize}>
+                                                {formatFileSize(att.fileSize)}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <Download size={14} className={styles.downloadIcon} />
+                                        </a>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {msg.content && <div className={styles.messageText}>{msg.content}</div>}
                             <div className={styles.messageTime}>
                               {msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
@@ -503,18 +593,72 @@ export default function ChatBot() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form className={styles.inputArea} onSubmit={handleSendMessage}>
-                  <input
-                    type="text"
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    disabled={isSending}
-                  />
-                  <button type="submit" disabled={isSending || !newMessage.trim()}>
-                    {isSending ? <Loader2 className={styles.spinner} size={16} /> : <Send size={16} />}
-                  </button>
-                </form>
+                <div className={styles.inputWrapper}>
+                  {selectedFiles.length > 0 && (
+                    <div className={styles.filesPreviewArea}>
+                      {selectedFiles.map((file, idx) => (
+                        <div key={idx} className={styles.filePreviewChip}>
+                          {file.type.startsWith('image/') ? (
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className={styles.filePreviewThumb}
+                            />
+                          ) : (
+                            <FileText size={14} />
+                          )}
+                          <span className={styles.filePreviewName} title={file.name}>
+                            {file.name}
+                          </span>
+                          <button
+                            type="button"
+                            className={styles.filePreviewRemove}
+                            onClick={() => handleRemoveFile(idx)}
+                            title="Remove attachment"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <form className={styles.inputArea} onSubmit={handleSendMessage}>
+                    <button
+                      type="button"
+                      className={styles.attachButton}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isSending}
+                      title="Attach file"
+                    >
+                      <Paperclip size={18} />
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: 'none' }}
+                      multiple
+                      onChange={handleFileSelect}
+                    />
+                    <input
+                      type="text"
+                      placeholder={
+                        selectedFiles.length > 0
+                          ? "Add a message (optional)..."
+                          : "Type a message..."
+                      }
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      disabled={isSending}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0)}
+                    >
+                      {isSending ? <Loader2 className={styles.spinner} size={16} /> : <Send size={16} />}
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
           </div>

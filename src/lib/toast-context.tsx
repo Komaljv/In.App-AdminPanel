@@ -44,7 +44,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span style={{ flex: 1 }}>{t.message}</span>
               <button
                 onClick={() => dismiss(t.id)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 2 }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "inherit",
+                  padding: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: 0.7,
+                  borderRadius: 4,
+                  transition: "opacity 0.2s",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.opacity = "0.7";
+                }}
+                aria-label="Dismiss notification"
               >
                 <X size={15} />
               </button>

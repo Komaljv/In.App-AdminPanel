@@ -414,3 +414,183 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ─── Attachment Styles ─────────────────────────────────────────────── */
+
+.inputWrapper {
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.filesPreviewArea {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  overflow-x: auto;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.filePreviewChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.filePreviewThumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.filePreviewName {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.filePreviewRemove {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filePreviewRemove:hover {
+  color: #ef4444;
+}
+
+.attachButton {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  color: #64748b !important;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s !important;
+  flex-shrink: 0;
+}
+
+.attachButton:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  color: #6366f1 !important;
+  transform: none !important;
+}
+
+.attachButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.attachmentsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.imageAttachmentLink {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.imageAttachment {
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 8px;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.imageAttachment:hover {
+  transform: scale(1.02);
+}
+
+.fileAttachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+}
+
+.mine .fileAttachment {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.mine .fileAttachment:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.theirs .fileAttachment {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.theirs .fileAttachment:hover {
+  background: #f8fafc;
+}
+
+.fileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+.fileDetails {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fileName {
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.downloadIcon {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.messageText {
+  word-break: break-word;
+}

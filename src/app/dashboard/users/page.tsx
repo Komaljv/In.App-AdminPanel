@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Search, MoreHorizontal, Trash2, UserX, Shield, BarChart2, MailX, MailCheck } from "lucide-react";
+import { UserPlus, Search, MoreHorizontal, Trash2, UserX, Shield, BarChart2, MailX, MailCheck, LogIn } from "lucide-react";
 import InviteModal from "@/components/invite-modal/InviteModal";
 import ChangeRoleModal from "@/components/change-role-modal/ChangeRoleModal";
 import NotificationModal from "@/components/notification-modal/NotificationModal";
 import AssignEmailModal from "@/components/assign-email-modal/AssignEmailModal";
 import ConfirmDialog from "@/components/confirm-dialog/ConfirmDialog";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminUsers, deleteUser, deactivateUser, activateUser, revokeUserEmail, getCompanies, updateUser, type User, type Company } from "@/lib/api";
+import { getAdminUsers, deleteUser, deactivateUser, activateUser, revokeUserEmail, getCompanies, updateUser, impersonateUser, type User, type Company } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { isAdminUser, isSystemAdmin } from "@/lib/role-utils";
 import styles from "./page.module.css";
@@ -22,7 +22,7 @@ import { Table, type Column } from "@/components/ui/Table/Table";
 
 export default function UsersPage() {
   const router = useRouter();
-  const { user: authUser } = useAuth();
+  const { user: authUser, impersonate } = useAuth();
   const { showToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -133,6 +133,32 @@ export default function UsersPage() {
       });
     }
   }, [authUser]);
+
+  const handleImpersonate = async (target: User) => {
+    if (!authUser?.token || !target.id) return;
+    try {
+      const res = await impersonateUser(target.id, authUser.token);
+      if (res.success && res.data) {
+        const payload = res.data as any;
+        const targetUser = payload.user || payload;
+        const userData = {
+          id: targetUser.id || target.id,
+          companyId: targetUser.companyId || target.companyId || authUser.companyId,
+          name: targetUser.name || target.name || "User",
+          email: targetUser.email || target.email || "",
+          roleId: targetUser.roleId || target.roleId || "",
+          role: targetUser.role?.name || targetUser.role || target.role?.name || "USER",
+        };
+        showToast(`Now viewing as ${userData.name}`, "success");
+        impersonate(payload.accessToken, userData);
+        router.push("/dashboard");
+      } else {
+        showToast(res.error || "Failed to view as user", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Failed to view as user", "error");
+    }
+  };
 
   const handleDelete = async (id: string, name: string) => {
     openConfirm(
@@ -280,17 +306,17 @@ export default function UsersPage() {
       }
     ];
 
-    if (isSystemAdmin(authUser)) {
-      cols.push({
-        key: "company",
-        header: "Company",
-        render: (u) => (
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            {companies.find(c => c.id === u.companyId)?.name || "—"}
-          </span>
-        )
-      });
-    }
+    // if (isSystemAdmin(authUser)) {
+    //   cols.push({
+    //     key: "company",
+    //     header: "Company",
+    //     render: (u) => (
+    //       <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+    //         {companies.find(c => c.id === u.companyId)?.name || "—"}
+    //       </span>
+    //     )
+    //   });
+    // }
 
     cols.push(
       {
@@ -366,6 +392,20 @@ export default function UsersPage() {
                   <BarChart2 size={14} style={{ marginRight: 8 }} />
                   View Analytics
                 </button>
+                {u.id !== authUser?.id && u.isActive !== false && (
+                  <button
+                    className="menu-item"
+                    onClick={() => {
+                      setOpenMenu(null);
+                      handleImpersonate(u);
+                    }}
+                    title="View dashboard as this user"
+                    style={{ color: "var(--color-primary, #6366f1)", fontWeight: 500 }}
+                  >
+                    <LogIn size={14} style={{ marginRight: 8, color: "var(--color-primary, #6366f1)" }} />
+                    View as User
+                  </button>
+                )}
                 <button
                   className="menu-item"
                   onClick={() => openRoleModal(u)}

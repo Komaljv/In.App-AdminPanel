@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/lib/toast-context";
 import Sidebar from "@/components/sidebar/Sidebar";
+import ImpersonationBanner from "@/components/impersonation-banner/ImpersonationBanner";
 import ChatBot from "@/components/chat-bot/ChatBot";
 import PushNotificationHandler from "@/components/push-notification/PushNotificationHandler";
 import styles from "./dashboard-layout.module.css";
@@ -31,11 +32,14 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className={styles.shell}>
-      <Sidebar />
-      <main className={styles.main}>{children}</main>
-      <ChatBot />
-      <PushNotificationHandler />
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <ImpersonationBanner />
+      <div className={styles.shell}>
+        <Sidebar />
+        <main className={styles.main}>{children}</main>
+        <ChatBot />
+        <PushNotificationHandler />
+      </div>
     </div>
   );
 }

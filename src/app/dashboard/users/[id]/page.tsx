@@ -97,7 +97,7 @@ export default function UserAnalyticsPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { user: authUser, login } = useAuth();
+  const { user: authUser, impersonate } = useAuth();
   const { showToast } = useToast();
 
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -203,23 +203,24 @@ export default function UserAnalyticsPage() {
     try {
       const res = await impersonateUser(id, authUser.token);
       if (res.success && res.data) {
-        const payload = res.data as { user: any; accessToken: string; refreshToken: string };
+        const payload = res.data as any;
+        const targetUser = payload.user || payload;
         const userData = {
-          id: payload.user.id,
-          companyId: payload.user.companyId,
-          name: payload.user.name,
-          email: payload.user.email,
-          roleId: payload.user.roleId,
-          role: payload.user.role?.name || "USER"
+          id: targetUser.id || id,
+          companyId: targetUser.companyId || data?.profile?.companyId || authUser.companyId,
+          name: targetUser.name || data?.profile?.name || "User",
+          email: targetUser.email || data?.profile?.email || "",
+          roleId: targetUser.roleId || data?.profile?.role?.id || "",
+          role: targetUser.role?.name || targetUser.role || data?.profile?.role?.name || "USER",
         };
-        showToast(`Now logged in as ${data?.profile?.name || "User"}`, "success");
-        login(payload.accessToken, userData);
+        showToast(`Now viewing as ${userData.name}`, "success");
+        impersonate(payload.accessToken, userData);
         router.push("/dashboard");
       } else {
-        showToast(res.error || "Failed to login as user", "error");
+        showToast(res.error || "Failed to view as user", "error");
       }
     } catch (err: any) {
-      showToast(err.message || "Failed to login as user", "error");
+      showToast(err.message || "Failed to view as user", "error");
     }
   };
 
@@ -322,9 +323,9 @@ export default function UserAnalyticsPage() {
               </button>
             </>
           )}
-          <button className="btn btn-outline" onClick={handleImpersonate}>
+          <button className="btn btn-outline" onClick={handleImpersonate} title="View as User">
             <LogIn size={16} style={{ marginRight: 6 }} />
-            Login As User
+            View as User
           </button>
           <button className="btn btn-ghost" onClick={handleExportCSV}>
             <Database size={16} style={{ marginRight: 6 }} />

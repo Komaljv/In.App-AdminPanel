@@ -23,10 +23,12 @@ import { Input } from "@/components/ui/Input/Input";
 import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
+import { isAdminUser } from "@/lib/role-utils";
 
 export default function CategoriesPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const isAdmin = isAdminUser(user);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,11 +60,24 @@ export default function CategoriesPage() {
     const res = await getCategories(user.token);
     setLoading(false);
     if (res.success && res.data) {
-      setCategories(Array.isArray(res.data) ? res.data : []);
+      const allCategories = Array.isArray(res.data) ? res.data : [];
+      const validCategories = isAdmin
+        ? allCategories
+        : allCategories.filter(
+            (c: any) =>
+              !c.createdById ||
+              c.createdById === user?.id ||
+              c.creator?.id === user?.id ||
+              c.creator?.role?.name === "MASTER" ||
+              c.creator?.role?.name === "ADMIN" ||
+              c.creator?.role === "MASTER" ||
+              c.creator?.role === "ADMIN"
+          );
+      setCategories(validCategories);
     } else {
       showToast(res.error || "Failed to load categories", "error");
     }
-  }, [user?.token, showToast]);
+  }, [user?.token, isAdmin, user?.id, showToast]);
 
   useEffect(() => {
     fetchCategories();

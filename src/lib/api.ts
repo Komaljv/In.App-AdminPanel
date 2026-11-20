@@ -857,6 +857,11 @@ export async function createFolder(
   );
 }
 
+/** GET /api/folders */
+export async function getFolders(authToken: string): Promise<ApiResponse> {
+  return call('/api/folders', { method: 'GET' }, authToken);
+}
+
 /** GET /api/folders/category/:categoryId */
 export async function getFoldersByCategory(
   categoryId: string,
@@ -917,12 +922,31 @@ export async function getMessages(
   return call(`/api/conversations/${conversationId}/messages?${params.toString()}`, { method: 'GET' }, authToken);
 }
 
+/** POST /api/conversations/:conversationId/attachments */
+export async function uploadConversationAttachments(
+  conversationId: string,
+  files: File[],
+  authToken: string
+): Promise<ApiResponse> {
+  const form = new FormData();
+  files.forEach((f) => form.append('files', f));
+  return call(`/api/conversations/${conversationId}/attachments`, { method: 'POST', body: form }, authToken);
+}
+
 /** POST /api/conversations/:conversationId/messages */
 export async function sendMessage(
   conversationId: string,
   content: string,
-  authToken: string
+  authToken: string,
+  files?: File[]
 ): Promise<ApiResponse> {
+  if (files && files.length > 0) {
+    const form = new FormData();
+    form.append('content', content || '');
+    files.forEach((f) => form.append('files', f));
+    return call(`/api/conversations/${conversationId}/messages`, { method: 'POST', body: form }, authToken);
+  }
+
   return call(
     `/api/conversations/${conversationId}/messages`,
     { method: 'POST', body: JSON.stringify({ content }) },

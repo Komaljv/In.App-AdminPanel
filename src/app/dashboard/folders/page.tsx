@@ -24,12 +24,14 @@ import { Input } from "@/components/ui/Input/Input";
 import { Badge } from "@/components/ui/Badge/Badge";
 import { Table, type Column } from "@/components/ui/Table/Table";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card/Card";
+import { isAdminUser } from "@/lib/role-utils";
 
 export interface Folder {
   id: string;
   name: string;
   categoryId: string;
   createdAt: string;
+  createdById?: string;
   creator?: {
     id: string;
     name: string;
@@ -40,6 +42,7 @@ export interface Folder {
 function FoldersPageContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const isAdmin = isAdminUser(user);
 
   const searchParams = useSearchParams();
   const initialCategoryId = searchParams.get("categoryId");
@@ -78,14 +81,26 @@ function FoldersPageContent() {
     const res = await getCategories(user.token);
     if (res.success && res.data) {
       const fetchedCategories = Array.isArray(res.data) ? res.data : [];
-      setCategories(fetchedCategories);
-      if (fetchedCategories.length > 0 && !selectedCategoryId) {
-        setSelectedCategoryId(fetchedCategories[0].id);
+      const validCategories = isAdmin
+        ? fetchedCategories
+        : fetchedCategories.filter(
+            (c: any) =>
+              !c.createdById ||
+              c.createdById === user?.id ||
+              c.creator?.id === user?.id ||
+              c.creator?.role?.name === "MASTER" ||
+              c.creator?.role?.name === "ADMIN" ||
+              c.creator?.role === "MASTER" ||
+              c.creator?.role === "ADMIN"
+          );
+      setCategories(validCategories);
+      if (validCategories.length > 0 && !selectedCategoryId) {
+        setSelectedCategoryId(validCategories[0].id);
       }
     } else {
       showToast(res.error || "Failed to load categories", "error");
     }
-  }, [user?.token, showToast, selectedCategoryId]);
+  }, [user?.token, isAdmin, user?.id, showToast, selectedCategoryId]);
 
   useEffect(() => {
     fetchCategories();
@@ -176,9 +191,17 @@ function FoldersPageContent() {
     }
   };
 
-  const filtered = folders.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = folders.filter((f) => {
+    const matchesSearch = f.name.toLowerCase().includes(search.toLowerCase());
+    if (!isAdmin) {
+      const isCreatedByUser =
+        f.createdById === user?.id ||
+        (f.creator as any)?.id === user?.id ||
+        (f.creator as any)?.email === user?.email;
+      return matchesSearch && isCreatedByUser;
+    }
+    return matchesSearch;
+  });
 
   const columns = useMemo<Column<Folder>[]>(() => [
     {

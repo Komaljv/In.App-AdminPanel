@@ -7,8 +7,7 @@ export interface AuthUser {
   companyId: string;
   name: string;
   email: string;
-  role: string,
-
+  role: string;
   roleId: string;
   token: string; // access token
   refreshToken?: string; // optional refresh token
@@ -21,17 +20,22 @@ export interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  // login now expects access token and full user data (including refresh token)
-  login: (accessToken: string, userData: Omit<AuthUser, 'token'>) => void;
+  login: (accessToken: string, userData: Omit<AuthUser, "token">) => void;
   logout: () => void;
+  impersonate: (userToken: string, userData: Omit<AuthUser, "token">) => void;
+  exitImpersonation: () => void;
+  isImpersonating: boolean;
+  impersonatorAdmin: AuthUser | null;
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null); 
+const AuthContext = createContext<AuthContextType | null>(null);
 const AUTH_KEY = "crm_admin_auth";
+const BACKUP_AUTH_KEY = "crm_impersonator_backup";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [impersonatorAdmin, setImpersonatorAdmin] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,6 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const stored = localStorage.getItem(AUTH_KEY);
         if (stored) setUser(JSON.parse(stored));
+
+        const backupStored = localStorage.getItem(BACKUP_AUTH_KEY);
+        if (backupStored) {
+          setImpersonatorAdmin(JSON.parse(backupStored));
+        } else {
+          setImpersonatorAdmin(null);
+        }
       } catch {}
     };
 
@@ -55,13 +66,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(AUTH_KEY, JSON.stringify(authUser));
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem(AUTH_KEY);
+  const impersonate = useCallback(
+    (userToken: string, userData: Omit<AuthUser, "token">) => {
+      if (user && !impersonatorAdmin) {
+        localStorage.setItem(BACKUP_AUTH_KEY, JSON.stringify(user));
+        setImpersonatorAdmin(user);
+      }
+      const authUser = { ...userData, token: userToken };
+      setUser(authUser);
+      localStorage.setItem(AUTH_KEY, JSON.stringify(authUser));
+    },
+    [user, impersonatorAdmin]
+  );
+
+  const exitImpersonation = useCallback(() => {
+    try {
+      const backupStored = localStorage.getItem(BACKUP_AUTH_KEY);
+      if (backupStored) {
+        const adminUser = JSON.parse(backupStored);
+        setUser(adminUser);
+        localStorage.setItem(AUTH_KEY, JSON.stringify(adminUser));
+      }
+    } catch (e) {
+      console.error("Failed to restore admin session:", e);
+    } finally {
+      localStorage.removeItem(BACKUP_AUTH_KEY);
+      setImpersonatorAdmin(null);
+    }
   }, []);
 
+  const logout = useCallback(() => {
+    setUser(null);
+    setImpersonatorAdmin(null);
+    localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(BACKUP_AUTH_KEY);
+  }, []);
+
+  const isImpersonating = Boolean(impersonatorAdmin);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        impersonate,
+        exitImpersonation,
+        isImpersonating,
+        impersonatorAdmin,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
